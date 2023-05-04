@@ -24,7 +24,12 @@ import (
 
 func main() {
 	// Parse IP ranges.
-	ranges, err := iprange.Parse("172.18.0.1", "172.18.0.0/24", "172.18.0.1-10", "172.18.0.1-172.18.1.10")
+	ranges, err := iprange.Parse(
+		"172.18.0.1",
+		"172.18.0.0/24",
+		"172.18.0.1-10",
+		"172.18.0.1-172.18.1.10",
+	)
 	if err != nil {
 		fmt.Printf("failed to parse IP ranges: %v\n", err)
 		return
