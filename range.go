@@ -6,21 +6,21 @@ import (
 	"strings"
 )
 
-type IPRange struct {
+type ipRange struct {
 	start xIP
 	end   xIP
 }
 
-func Parse(r string) (IPRange, error) {
+func parse(r string) (ipRange, error) {
 	if len(r) == 0 {
-		return IPRange{}, fmt.Errorf(`%w: ""`, errInvalidIPRangeFormat)
+		return ipRange{}, fmt.Errorf(`%w: ""`, errInvalidIPRangeFormat)
 	}
 
 	fmtErr := fmt.Errorf("%w: %s", errInvalidIPRangeFormat, r)
 	if strings.Contains(r, "/") {
 		ip, ipNet, err := net.ParseCIDR(r)
 		if err != nil {
-			return IPRange{}, fmtErr
+			return ipRange{}, fmtErr
 		}
 
 		n := len(ipNet.IP)
@@ -29,7 +29,7 @@ func Parse(r string) (IPRange, error) {
 			lastIP = append(lastIP, ipNet.IP[i]|^ipNet.Mask[i])
 		}
 
-		return IPRange{
+		return ipRange{
 			start: xIP{normalizeIP(ip)},
 			end:   xIP{normalizeIP(lastIP)},
 		}, nil
@@ -39,7 +39,7 @@ func Parse(r string) (IPRange, error) {
 	if found {
 		startIP := net.ParseIP(before)
 		if startIP == nil {
-			return IPRange{}, fmtErr
+			return ipRange{}, fmtErr
 		}
 
 		endIP := net.ParseIP(after)
@@ -51,10 +51,10 @@ func Parse(r string) (IPRange, error) {
 			after = before[:index+1] + after
 			endIP = net.ParseIP(after)
 			if endIP == nil {
-				return IPRange{}, fmtErr
+				return ipRange{}, fmtErr
 			}
 
-			return IPRange{
+			return ipRange{
 				start: xIP{normalizeIP(startIP)},
 				end:   xIP{normalizeIP(endIP)},
 			}, nil
@@ -63,10 +63,10 @@ func Parse(r string) (IPRange, error) {
 		ns := normalizeIP(startIP)
 		ne := normalizeIP(endIP)
 		if len(ns) != len(ne) {
-			return IPRange{}, fmtErr
+			return ipRange{}, fmtErr
 		}
 
-		return IPRange{
+		return ipRange{
 			start: xIP{ns},
 			end:   xIP{ne},
 		}, nil
@@ -74,22 +74,19 @@ func Parse(r string) (IPRange, error) {
 
 	ip := net.ParseIP(r)
 	if ip == nil {
-		return IPRange{}, fmtErr
+		return ipRange{}, fmtErr
 	}
 	nIP := normalizeIP(ip)
 
-	return IPRange{
+	return ipRange{
 		start: xIP{nIP},
 		end:   xIP{nIP},
 	}, nil
 }
 
-func (r IPRange) Contains(ip net.IP) bool {
-	return r.contains(xIP{ip})
-}
-
-func (r IPRange) contains(ip xIP) bool {
-	switch r.start.cmp(ip) {
+func (r ipRange) contains(ip net.IP) bool {
+	w := xIP{ip}
+	switch r.start.cmp(w) {
 	case 0:
 		return true
 	case 1:
@@ -97,10 +94,10 @@ func (r IPRange) contains(ip xIP) bool {
 	case -2:
 		return false
 	default:
-		return r.end.cmp(ip) >= 0
+		return r.end.cmp(w) >= 0
 	}
 }
 
-func (r1 IPRange) Equal(r2 IPRange) bool {
+func (r1 ipRange) equal(r2 ipRange) bool {
 	return r1.start.Equal(r2.start.IP) && r1.end.Equal(r2.end.IP)
 }

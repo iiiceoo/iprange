@@ -6,15 +6,15 @@ import (
 	"sort"
 )
 
-type IPRanges []IPRange
+type IPRanges []ipRange
 
-func ParseRanges(rs ...string) (IPRanges, error) {
+func Parse(rs ...string) (IPRanges, error) {
 	if len(rs) == 0 {
 		return nil, fmt.Errorf("%w: []", errInvalidIPRangeFormat)
 	}
 
 	if len(rs) == 1 {
-		v, err := Parse(rs[0])
+		v, err := parse(rs[0])
 		if err != nil {
 			return nil, err
 		}
@@ -24,7 +24,7 @@ func ParseRanges(rs ...string) (IPRanges, error) {
 	n := 0
 	res := make(IPRanges, 0, len(rs))
 	for i, r := range rs {
-		v, err := Parse(r)
+		v, err := parse(r)
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +45,7 @@ func ParseRanges(rs ...string) (IPRanges, error) {
 
 func (rr IPRanges) Contains(ip net.IP) bool {
 	for _, r := range rr {
-		if r.Contains(ip) {
+		if r.contains(ip) {
 			return true
 		}
 	}
@@ -64,7 +64,7 @@ func (rr1 IPRanges) Equal(rr2 IPRanges) bool {
 	}
 
 	for i := 0; i < n; i++ {
-		if !rr1[i].Equal(rr2[i]) {
+		if !rr1[i].equal(rr2[i]) {
 			return false
 		}
 	}
@@ -87,10 +87,6 @@ func (rr IPRanges) Merge() IPRanges {
 	cur := -1
 	merge := make(IPRanges, 0, n)
 	for _, r := range rc {
-		if normalizeIP(r.start.IP) == nil {
-			continue
-		}
-
 		if cur == -1 {
 			merge = append(merge, r)
 			cur++
@@ -114,11 +110,11 @@ func (rr IPRanges) Merge() IPRanges {
 	return merge
 }
 
-func (rr IPRanges) Union(rs ...IPRange) IPRanges {
+func (rr IPRanges) Union(rs IPRanges) IPRanges {
 	return append(rr, rs...).Merge()
 }
 
-func (rr IPRanges) Diff(rs ...IPRange) IPRanges {
+func (rr IPRanges) Diff(rs IPRanges) IPRanges {
 	if len(rr) == 0 || len(rs) == 0 {
 		return rr.Merge()
 	}
@@ -159,7 +155,7 @@ func (rr IPRanges) Diff(rs ...IPRange) IPRanges {
 			// *------*
 			//     `------`
 			if om[i].start.cmp(tm[j].start) < 0 {
-				res = append(res, IPRange{
+				res = append(res, ipRange{
 					start: om[i].start,
 					end:   tm[j].start.prev(),
 				})
@@ -174,7 +170,7 @@ func (rr IPRanges) Diff(rs ...IPRange) IPRanges {
 		// *----------*
 		//     `--`
 		if om[i].start.cmp(tm[j].start) < 0 {
-			res = append(res, IPRange{
+			res = append(res, ipRange{
 				start: om[i].start,
 				end:   tm[j].start.prev(),
 			})
@@ -197,7 +193,7 @@ func (rr IPRanges) Diff(rs ...IPRange) IPRanges {
 	return res
 }
 
-func (rr IPRanges) Intersect(rs ...IPRange) IPRanges {
+func (rr IPRanges) Intersect(rs IPRanges) IPRanges {
 	if len(rr) == 0 || len(rs) == 0 {
 		return rr.Merge()
 	}
@@ -214,7 +210,7 @@ func (rr IPRanges) Intersect(rs ...IPRange) IPRanges {
 		start := maxXIP(om[i].start, tm[j].start)
 		end := minXIP(om[i].end, tm[j].end)
 		if start.cmp(end) < 0 {
-			res = append(res, IPRange{
+			res = append(res, ipRange{
 				start: start,
 				end:   end,
 			})

@@ -10,31 +10,35 @@ type xIP struct {
 }
 
 func (ip xIP) next() xIP {
-	i := ip.toInt()
+	i := ipToInt(ip.IP)
 	i.Add(i, big.NewInt(1))
 
-	return xIP{IP: net.IP(i.Bytes())}
+	return xIP{intToIP(i)}
 }
 
 func (ip xIP) prev() xIP {
-	i := ip.toInt()
+	i := ipToInt(ip.IP)
 	i.Sub(i, big.NewInt(1))
 
-	return xIP{net.IP(i.Bytes())}
+	return xIP{intToIP(i)}
 }
 
 func (ip1 xIP) cmp(ip2 xIP) int {
 	nIP1 := normalizeIP(ip1.IP)
 	nIP2 := normalizeIP(ip2.IP)
 	if len(nIP1) != 0 && len(nIP1) == len(nIP2) {
-		return ip1.toInt().Cmp(ip2.toInt())
+		return ipToInt(nIP1).Cmp(ipToInt(nIP2))
 	}
 
 	return -2
 }
 
-func (ip xIP) toInt() *big.Int {
-	return big.NewInt(0).SetBytes(ip.IP)
+func ipToInt(ip net.IP) *big.Int {
+	return big.NewInt(0).SetBytes(ip)
+}
+
+func intToIP(i *big.Int) net.IP {
+	return net.IP(i.Bytes())
 }
 
 func normalizeIP(ip net.IP) net.IP {
