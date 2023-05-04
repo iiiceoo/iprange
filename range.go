@@ -54,21 +54,27 @@ func parse(r string) (ipRange, error) {
 				return ipRange{}, fmtErr
 			}
 
+			start := xIP{normalizeIP(startIP)}
+			end := xIP{normalizeIP(endIP)}
+			if end.cmp(start) < 0 {
+				return ipRange{}, fmtErr
+			}
+
 			return ipRange{
-				start: xIP{normalizeIP(startIP)},
-				end:   xIP{normalizeIP(endIP)},
+				start: start,
+				end:   end,
 			}, nil
 		}
 
-		ns := normalizeIP(startIP)
-		ne := normalizeIP(endIP)
-		if len(ns) != len(ne) {
+		start := xIP{normalizeIP(startIP)}
+		end := xIP{normalizeIP(endIP)}
+		if end.cmp(start) < 0 {
 			return ipRange{}, fmtErr
 		}
 
 		return ipRange{
-			start: xIP{ns},
-			end:   xIP{ne},
+			start: start,
+			end:   end,
 		}, nil
 	}
 
