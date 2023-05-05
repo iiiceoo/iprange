@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/iiiceoo/iprange?status.svg)](https://godoc.org/github.com/iiiceoo/iprange)
 
-*The iprange package parses IPv4/IPv6 addresses from strings in IP range format and handle interval mathematics between multiple IP ranges.*
+*The package iprange parses IPv4/IPv6 addresses from strings in IP range format and handle interval mathematics between multiple IP ranges.*
 
 ## IP range formats
 
@@ -11,7 +11,7 @@
 - `172.18.0.1-10` / `fd00::1-a`
 - `172.18.0.1-172.18.1.10` / `fd00::1-fd00::1:a`
 
-## Get started
+## Example
 
 ```go
 package main

@@ -8,14 +8,20 @@ type rangesIterator struct {
 	current    xIP
 }
 
+// Iterator generates a new iterator for IPRanges rr, which stores the merged
+// rr (ordered and deduplicated) and always points the cursor to the first IP
+// address of the entire IPRanges.
 func (rr IPRanges) Iterator() *rangesIterator {
 	return &rangesIterator{
 		ranges: rr.Merge(),
 	}
 }
 
+// Next returns the next IP address. If the rangesIterator has been exhausted,
+// return nil.
 func (ri *rangesIterator) Next() net.IP {
 	n := len(ri.ranges)
+	// ri.ranges is an empty slice or ri.current equals to the last IP address.
 	if n == ri.rangeIndex {
 		return nil
 	}
