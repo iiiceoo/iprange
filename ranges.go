@@ -2,6 +2,7 @@ package iprange
 
 import (
 	"fmt"
+	"math/big"
 	"net"
 	"sort"
 )
@@ -70,6 +71,15 @@ func (rr1 IPRanges) Equal(rr2 IPRanges) bool {
 	}
 
 	return true
+}
+
+func (rr IPRanges) Size() *big.Int {
+	n := big.NewInt(0)
+	for _, r := range rr.Merge() {
+		n.Add(n, r.size())
+	}
+
+	return n
 }
 
 func (rr IPRanges) Merge() IPRanges {

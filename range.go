@@ -2,6 +2,7 @@ package iprange
 
 import (
 	"fmt"
+	"math/big"
 	"net"
 	"strings"
 )
@@ -106,4 +107,15 @@ func (r ipRange) contains(ip net.IP) bool {
 
 func (r1 ipRange) equal(r2 ipRange) bool {
 	return r1.start.Equal(r2.start.IP) && r1.end.Equal(r2.end.IP)
+}
+
+func (r ipRange) size() *big.Int {
+	n := big.NewInt(1)
+	n.Add(n, ipToInt(r.end.IP))
+
+	return n.Sub(n, ipToInt(r.start.IP))
+}
+
+func (r ipRange) String() string {
+	return r.start.String() + "-" + r.end.String()
 }

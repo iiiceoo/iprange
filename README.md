@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/iiiceoo/iprange?status.svg)](https://godoc.org/github.com/iiiceoo/iprange)
 
-*The iprange package parses IPv4/IPv6 address from strings in IP range format and handle interval mathematics between multiple IP ranges.*
+*The iprange package parses IPv4/IPv6 addresses from strings in IP range format and handle interval mathematics between multiple IP ranges.*
 
 ## IP range formats
 
@@ -34,22 +34,22 @@ func main() {
 		fmt.Printf("failed to parse IP ranges: %v\n", err)
 		return
 	}
-	fmt.Printf("IP ranges: %+v\n", ranges)
+	fmt.Printf("IP ranges: %s\n", ranges)
 
 	// Merge IP ranges.
 	merged := ranges.Merge()
-	fmt.Printf("Merged IP ranges: %+v\n", merged)
+	fmt.Printf("Merged IP ranges: %s\n", merged)
 
 	// Interval mathematics of IP ranges.
 	another, _ := iprange.Parse("172.18.0.0/24")
 	diffSet := merged.Diff(another)
-	fmt.Printf("Difference set between two IP ranges: %+v\n", diffSet)
+	fmt.Printf("Difference set between two IP ranges: %s\n", diffSet)
 
 	// Iterate through IP ranges.
 	fmt.Println("Scan the difference set:")
-	it := diffSet.Iterator()
+	iter := diffSet.Iterator()
 	for {
-		ip := it.Next()
+		ip := iter.Next()
 		if ip == nil {
 			break
 		}
@@ -57,7 +57,3 @@ func main() {
 	}
 }
 ```
-
-## License
-
-iprange is [MIT-Licensed](https://github.com/iiiceoo/iprange/blob/main/LICENSE).
