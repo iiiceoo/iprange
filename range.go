@@ -135,5 +135,9 @@ func (r ipRange) size() *big.Int {
 
 // String implements fmt.Stringer.
 func (r ipRange) String() string {
+	if r.start.Equal(r.end.IP) {
+		return r.start.String()
+	}
+
 	return r.start.String() + "-" + r.end.String()
 }

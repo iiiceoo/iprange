@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/iiiceoo/iprange"
 )
@@ -31,8 +32,7 @@ func main() {
 		"172.18.0.1-172.18.1.10",
 	)
 	if err != nil {
-		fmt.Printf("failed to parse IP ranges: %v\n", err)
-		return
+		log.Fatalf("failed to parse IP ranges: %v\n", err)
 	}
 	fmt.Printf("IP ranges: %s\n", ranges)
 

@@ -10,7 +10,7 @@ type rangesIterator struct {
 
 // Iterator generates a new iterator for IPRanges rr, which stores the merged
 // rr (ordered and deduplicated) and always points the cursor to the first IP
-// address of the entire IPRanges.
+// address of the entire IPRanges. Call Next to iterate through the IPRanges.
 func (rr IPRanges) Iterator() *rangesIterator {
 	return &rangesIterator{
 		ranges: rr.Merge(),
