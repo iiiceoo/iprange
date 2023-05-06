@@ -17,9 +17,9 @@ type ipRange struct {
 // parse parses the IP range format string as ipRange that records the
 // starting and ending IP addresses. The error errInvalidIPRangeFormat
 // wiil be returned when r is invalid.
-func parse(r string) (ipRange, error) {
+func parse(r string) (*ipRange, error) {
 	if len(r) == 0 {
-		return ipRange{}, fmt.Errorf(`%w: ""`, errInvalidIPRangeFormat)
+		return nil, fmt.Errorf(`%w: ""`, errInvalidIPRangeFormat)
 	}
 
 	fmtErr := fmt.Errorf("%w: %s", errInvalidIPRangeFormat, r)
@@ -28,7 +28,7 @@ func parse(r string) (ipRange, error) {
 	if strings.Contains(r, "/") {
 		ip, ipNet, err := net.ParseCIDR(r)
 		if err != nil {
-			return ipRange{}, fmtErr
+			return nil, fmtErr
 		}
 
 		n := len(ipNet.IP)
@@ -37,7 +37,7 @@ func parse(r string) (ipRange, error) {
 			lastIP = append(lastIP, ipNet.IP[i]|^ipNet.Mask[i])
 		}
 
-		return ipRange{
+		return &ipRange{
 			start: xIP{normalizeIP(ip)},
 			end:   xIP{normalizeIP(lastIP)},
 		}, nil
@@ -47,7 +47,7 @@ func parse(r string) (ipRange, error) {
 	if found {
 		startIP := net.ParseIP(before)
 		if startIP == nil {
-			return ipRange{}, fmtErr
+			return nil, fmtErr
 		}
 
 		endIP := net.ParseIP(after)
@@ -61,16 +61,16 @@ func parse(r string) (ipRange, error) {
 			after = before[:index+1] + after
 			endIP = net.ParseIP(after)
 			if endIP == nil {
-				return ipRange{}, fmtErr
+				return nil, fmtErr
 			}
 
 			start := xIP{normalizeIP(startIP)}
 			end := xIP{normalizeIP(endIP)}
 			if end.cmp(start) < 0 {
-				return ipRange{}, fmtErr
+				return nil, fmtErr
 			}
 
-			return ipRange{
+			return &ipRange{
 				start: start,
 				end:   end,
 			}, nil
@@ -81,10 +81,10 @@ func parse(r string) (ipRange, error) {
 		start := xIP{normalizeIP(startIP)}
 		end := xIP{normalizeIP(endIP)}
 		if end.cmp(start) < 0 {
-			return ipRange{}, fmtErr
+			return nil, fmtErr
 		}
 
-		return ipRange{
+		return &ipRange{
 			start: start,
 			end:   end,
 		}, nil
@@ -94,26 +94,23 @@ func parse(r string) (ipRange, error) {
 	// fd00::1
 	ip := net.ParseIP(r)
 	if ip == nil {
-		return ipRange{}, fmtErr
+		return nil, fmtErr
 	}
 	nIP := normalizeIP(ip)
 
-	return ipRange{
+	return &ipRange{
 		start: xIP{nIP},
 		end:   xIP{nIP},
 	}, nil
 }
 
-// contains reports whether ipRange r contains net.IP ip. If r is IPv4 and ip
-// is IPv6, then it is also considered not contained, and vice versa.
-func (r ipRange) contains(ip net.IP) bool {
+// contains reports whether ipRange r contains net.IP ip.
+func (r *ipRange) contains(ip net.IP) bool {
 	w := xIP{ip}
 	switch r.start.cmp(w) {
 	case 0:
 		return true
 	case 1:
-		return false
-	case -2:
 		return false
 	default:
 		return r.end.cmp(w) >= 0
@@ -121,12 +118,12 @@ func (r ipRange) contains(ip net.IP) bool {
 }
 
 // equal reports whether ipRange r1 is equal to r2.
-func (r1 ipRange) equal(r2 ipRange) bool {
+func (r1 *ipRange) equal(r2 *ipRange) bool {
 	return r1.start.Equal(r2.start.IP) && r1.end.Equal(r2.end.IP)
 }
 
 // size calculates the total number of IP addresses that pertain to ipRange r.
-func (r ipRange) size() *big.Int {
+func (r *ipRange) size() *big.Int {
 	n := big.NewInt(1)
 	n.Add(n, ipToInt(r.end.IP))
 
@@ -134,7 +131,7 @@ func (r ipRange) size() *big.Int {
 }
 
 // String implements fmt.Stringer.
-func (r ipRange) String() string {
+func (r *ipRange) String() string {
 	if r.start.Equal(r.end.IP) {
 		return r.start.String()
 	}

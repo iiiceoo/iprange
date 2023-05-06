@@ -10,6 +10,24 @@ type xIP struct {
 	net.IP
 }
 
+// version returns the IP version of xIP:
+//
+//	1: IPv4
+//	2: IPv6
+//	0: not an IP: Unknown
+func (ip xIP) version() family {
+	nIP := normalizeIP(ip.IP)
+	if nIP == nil {
+		return Unknown
+	}
+
+	if len(nIP) == net.IPv4len {
+		return IPv4
+	}
+
+	return IPv6
+}
+
 // next returns the next IP address of xIP.
 func (ip xIP) next() xIP {
 	i := ipToInt(ip.IP)
@@ -26,22 +44,16 @@ func (ip xIP) prev() xIP {
 	return xIP{intToIP(i)}
 }
 
-// cmp compares xIP ip1 and ip2 and returns:
+// cmp compares xIP ip1 and ip2 with the same IP version and returns:
 //
 //	-1: ip1 <  ip2
 //	 0: ip1 == ip2
 //	+1: ip1 >  ip2
-//	-2: ip1 and ip2 are not comparable
-//
-// Incomparable means that ip1 is IPv4 and ip2 is IPv6, and vice versa.
 func (ip1 xIP) cmp(ip2 xIP) int {
 	nIP1 := normalizeIP(ip1.IP)
 	nIP2 := normalizeIP(ip2.IP)
-	if len(nIP1) != 0 && len(nIP1) == len(nIP2) {
-		return ipToInt(nIP1).Cmp(ipToInt(nIP2))
-	}
 
-	return -2
+	return ipToInt(nIP1).Cmp(ipToInt(nIP2))
 }
 
 // ipToInt converts net.IP to a big number.

@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/iiiceoo/iprange?status.svg)](https://godoc.org/github.com/iiiceoo/iprange)
 
-*The package iprange parses IPv4/IPv6 addresses from strings in IP range format and handle interval mathematics between multiple IP ranges.*
+*The package iprange parses IPv4/IPv6 addresses from strings in IP range format and handles interval mathematics between multiple IP ranges.*
 
 ## IP range formats
 
@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to parse IP ranges: %v\n", err)
 	}
-	fmt.Printf("IP ranges: %s\n", ranges)
+	fmt.Printf("%s IP ranges: %s\n", ranges.Version(), ranges)
 
 	// Merge IP ranges.
 	merged := ranges.Merge()
@@ -43,10 +43,10 @@ func main() {
 	// Interval mathematics of IP ranges.
 	another, _ := iprange.Parse("172.18.0.0/24")
 	diffSet := merged.Diff(another)
-	fmt.Printf("Difference set between two IP ranges: %s\n", diffSet)
+	fmt.Printf("The difference between two IP ranges: %s\n", diffSet)
 
 	// Iterate through IP ranges.
-	fmt.Println("Scan the difference set:")
+	fmt.Printf("Scan all %d IP addresses in the set:\n", diffSet.Size())
 	iter := diffSet.Iterator()
 	for {
 		ip := iter.Next()

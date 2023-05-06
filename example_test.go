@@ -9,20 +9,40 @@ import (
 )
 
 func ExampleParse() {
-	ranges, err := iprange.Parse("172.18.0.1", "172.18.0.0/24")
+	v4Ranges, err := iprange.Parse("172.18.0.1", "172.18.0.0/24")
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
-	fmt.Println(ranges)
+	v6Ranges, err := iprange.Parse("fd00::1-a", "fd00::1-fd00::1:a")
+	if err != nil {
+		log.Fatalf("error parsing IP ranges: %v", err)
+	}
 
-	ranges, err = iprange.Parse("fd00::1-a", "fd00::1-fd00::1:a")
-	if err != nil {
-		log.Fatalf("error parsing IP ranges: %v", err)
-	}
-	fmt.Println(ranges)
+	fmt.Println(v4Ranges)
+	fmt.Println(v6Ranges)
 	// Output:
 	// [172.18.0.1 172.18.0.0-172.18.0.255]
 	// [fd00::1-fd00::a fd00::1-fd00::1:a]
+}
+
+func ExampleIPRanges_Version() {
+	v4Ranges, err := iprange.Parse("172.18.0.1", "172.18.0.0/24")
+	if err != nil {
+		log.Fatalf("error parsing IP ranges: %v", err)
+	}
+	v6Ranges, err := iprange.Parse("fd00::1-a", "fd00::1-fd00::1:a")
+	if err != nil {
+		log.Fatalf("error parsing IP ranges: %v", err)
+	}
+	zero := iprange.IPRanges{}
+
+	fmt.Println(v4Ranges.Version())
+	fmt.Println(v6Ranges.Version())
+	fmt.Println(zero.Version())
+	// Output:
+	// IPv4
+	// IPv6
+	// Unknown
 }
 
 func ExampleIPRanges_Contains() {
@@ -77,9 +97,10 @@ func ExampleIPRanges_Size() {
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
+	zero := iprange.IPRanges{}
 
 	fmt.Println(ranges.Size())
-	fmt.Println(iprange.IPRanges{}.Size())
+	fmt.Println(zero.Size())
 	// Output:
 	// 256
 	// 0

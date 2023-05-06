@@ -3,17 +3,17 @@ package iprange
 import "net"
 
 type rangesIterator struct {
-	ranges     IPRanges
+	ranges     []ipRange
 	rangeIndex int
 	current    xIP
 }
 
 // Iterator generates a new iterator for IPRanges rr, which stores the merged
-// rr (ordered and deduplicated) and always points the cursor to the first IP
-// address of the entire IPRanges. Call Next to iterate through the IPRanges.
-func (rr IPRanges) Iterator() *rangesIterator {
+// IP ranges (ordered and deduplicated) and always points the cursor to the
+// first IP address. Call Next to iterate through the IPRanges.
+func (rr *IPRanges) Iterator() *rangesIterator {
 	return &rangesIterator{
-		ranges: rr.Merge(),
+		ranges: rr.Merge().ranges,
 	}
 }
 
