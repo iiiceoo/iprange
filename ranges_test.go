@@ -1,17 +1,17 @@
 package iprange
 
 import (
-	"errors"
 	"math/big"
 	"net"
 	"testing"
 )
 
 var parseTests = []struct {
-	name string
-	rs   []string
-	want *IPRanges
-	err  error
+	name          string
+	rs            []string
+	want          *IPRanges
+	err           error
+	isWantedError func(err error) bool
 }{
 	{
 		"IPv4 IP ranges",
@@ -25,23 +25,24 @@ var parseTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 1)},
-					end:   xIP{net.IPv4(172, 18, 0, 1)},
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 1).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 1)},
-					end:   xIP{net.IPv4(172, 18, 0, 10)},
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 10).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 1)},
-					end:   xIP{net.IPv4(172, 18, 1, 10)},
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 1, 10).To4()},
 				},
 			},
 		},
+		nil,
 		nil,
 	},
 	{
@@ -74,18 +75,19 @@ var parseTests = []struct {
 			},
 		},
 		nil,
+		nil,
 	},
-	{"Empty IP ranges", []string{}, nil, errInvalidIPRangeFormat},
-	{"Empty IP range", []string{""}, nil, errInvalidIPRangeFormat},
-	{"Invalid CIDR", []string{"172.18.0.0/33"}, nil, errInvalidIPRangeFormat},
-	{"Invalid start IP address", []string{"172.18.0.a-10"}, nil, errInvalidIPRangeFormat},
-	{"Invalid start IP address", []string{"172.18.0.a-172.18.0.10"}, nil, errInvalidIPRangeFormat},
-	{"Invalid end IP address", []string{"172.18.0.1-a"}, nil, errInvalidIPRangeFormat},
-	{"Invalid end IP address", []string{"172.18.0.1-172.18.0.a"}, nil, errInvalidIPRangeFormat},
-	{"Start IP address > end IP address", []string{"172.18.0.10-1"}, nil, errInvalidIPRangeFormat},
-	{"Start IP address > end IP address", []string{"172.18.0.10-172.18.0.1"}, nil, errInvalidIPRangeFormat},
-	{"Invalid IP address", []string{"172.18.0.a"}, nil, errInvalidIPRangeFormat},
-	{"Dual-stack IP ranges", []string{"172.18.0.1", "fd00::/64"}, nil, errDualStackIPRanges},
+	{"Empty IP ranges", []string{}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Empty IP range", []string{""}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Invalid CIDR", []string{"172.18.0.0/33"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Invalid start IP address", []string{"172.18.0.a-10"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Invalid start IP address", []string{"172.18.0.a-172.18.0.10"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Invalid end IP address", []string{"172.18.0.1-a"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Invalid end IP address", []string{"172.18.0.1-172.18.0.a"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Start IP address > end IP address", []string{"172.18.0.10-1"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Start IP address > end IP address", []string{"172.18.0.10-172.18.0.1"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Invalid IP address", []string{"172.18.0.a"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
+	{"Dual-stack IP ranges", []string{"172.18.0.1", "fd00::/64"}, nil, errDualStackIPRanges, IsDualStackIPRanges},
 }
 
 func TestParse(t *testing.T) {
@@ -96,7 +98,7 @@ func TestParse(t *testing.T) {
 			t.Parallel()
 			ranges, err := Parse(test.rs...)
 			if err != nil {
-				if !errors.Is(err, test.err) {
+				if !test.isWantedError(err) {
 					t.Fatalf("Parse(%q) err %q, want %q", test.rs, err, test.err)
 				}
 				return
@@ -119,8 +121,8 @@ var ipRangesVersionTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 1)},
-					end:   xIP{net.IPv4(172, 18, 0, 1)},
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 1).To4()},
 				},
 			},
 		},
@@ -172,8 +174,8 @@ var ipRangesContainsTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 1)},
-					end:   xIP{net.IPv4(172, 18, 0, 3)},
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 3).To4()},
 				},
 			},
 		},
@@ -200,8 +202,8 @@ var ipRangesContainsTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 1)},
-					end:   xIP{net.IPv4(172, 18, 0, 3)},
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 3).To4()},
 				},
 			},
 		},
@@ -228,8 +230,8 @@ var ipRangesContainsTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 1)},
-					end:   xIP{net.IPv4(172, 18, 0, 3)},
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 3).To4()},
 				},
 			},
 		},
@@ -262,8 +264,8 @@ var ipRangesContainsTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 1)},
-					end:   xIP{net.IPv4(172, 18, 0, 3)},
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 3).To4()},
 				},
 			},
 		},
@@ -298,12 +300,12 @@ var ipRangesMergeEqualTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 100)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 100).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 200)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 200).To4()},
 				},
 			},
 		},
@@ -311,8 +313,8 @@ var ipRangesMergeEqualTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 			},
 		},
@@ -356,8 +358,8 @@ var ipRangesMergeEqualTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 			},
 		},
@@ -400,12 +402,12 @@ var ipRangesEqualTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 100)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 100).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 200)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 200).To4()},
 				},
 			},
 		},
@@ -413,12 +415,12 @@ var ipRangesEqualTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 100)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 100).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 200)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 200).To4()},
 				},
 			},
 		},
@@ -466,12 +468,12 @@ var ipRangesEqualTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 100)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 100).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 200)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 200).To4()},
 				},
 			},
 		},
@@ -479,8 +481,8 @@ var ipRangesEqualTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 			},
 		},
@@ -522,8 +524,8 @@ var ipRangesEqualTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 			},
 		},
@@ -567,12 +569,12 @@ var ipRangesSizeTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 100)},
-					end:   xIP{net.IPv4(172, 18, 0, 255)},
+					start: xIP{net.IPv4(172, 18, 0, 100).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 255).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 200)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 200).To4()},
 				},
 			},
 		},
@@ -623,16 +625,16 @@ var ipRangesMergeTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 100)},
-					end:   xIP{net.IPv4(172, 18, 0, 210)},
+					start: xIP{net.IPv4(172, 18, 0, 100).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 210).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 200)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 200).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 220)},
-					end:   xIP{net.IPv4(172, 18, 0, 230)},
+					start: xIP{net.IPv4(172, 18, 0, 220).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 230).To4()},
 				},
 			},
 		},
@@ -640,12 +642,12 @@ var ipRangesMergeTests = []struct {
 			version: IPv4,
 			ranges: []ipRange{
 				{
-					start: xIP{net.IPv4(172, 18, 0, 0)},
-					end:   xIP{net.IPv4(172, 18, 0, 210)},
+					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 210).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 220)},
-					end:   xIP{net.IPv4(172, 18, 0, 230)},
+					start: xIP{net.IPv4(172, 18, 0, 220).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 230).To4()},
 				},
 			},
 		},
@@ -682,6 +684,550 @@ func TestIPRangesMerge(t *testing.T) {
 			merged := test.ranges.Merge()
 			if !merged.Equal(test.want) {
 				t.Fatalf("IPRanges(%v).Merge() = %v, want %v", test.ranges, merged, test.want)
+			}
+		})
+	}
+}
+
+var ipRangesUnionTests = []struct {
+	name    string
+	rangesX *IPRanges
+	rangesY *IPRanges
+	want    *IPRanges
+}{
+	{
+		"X U Y",
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 10).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 5).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 15).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 15).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+	},
+	{
+		"X U Y",
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::14")},
+					end:   xIP{net.ParseIP("fd00::19")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::1")},
+					end:   xIP{net.ParseIP("fd00::a")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::5")},
+					end:   xIP{net.ParseIP("fd00::f")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::1")},
+					end:   xIP{net.ParseIP("fd00::f")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::14")},
+					end:   xIP{net.ParseIP("fd00::19")},
+				},
+			},
+		},
+	},
+	{
+		"Different IP version",
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::0")},
+					end:   xIP{net.ParseIP("fd00::5")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+	},
+}
+
+func TestIPRangesUnion(t *testing.T) {
+	t.Parallel()
+	for _, test := range ipRangesUnionTests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			union := test.rangesX.Union(test.rangesY)
+			if !union.Equal(test.want) {
+				t.Fatalf("IPRanges(%v).Union(%v) = %v, want %v", test.rangesX, test.rangesY, union, test.want)
+			}
+		})
+	}
+}
+
+var ipRangesDiffTests = []struct {
+	name    string
+	rangesX *IPRanges
+	rangesY *IPRanges
+	want    *IPRanges
+}{
+	{
+		"X - Y",
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 20).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 25).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 30).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 40).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 50).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 15).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 15).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 8).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 12).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 18).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 22).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 13).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 14).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 16).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 17).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 25).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 30).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 40).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 50).To4()},
+				},
+			},
+		},
+	},
+	{
+		"X - Y",
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::a")},
+					end:   xIP{net.ParseIP("fd00::14")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::1")},
+					end:   xIP{net.ParseIP("fd00::5")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::19")},
+					end:   xIP{net.ParseIP("fd00::1e")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::28")},
+					end:   xIP{net.ParseIP("fd00::32")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::f")},
+					end:   xIP{net.ParseIP("fd00::f")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::8")},
+					end:   xIP{net.ParseIP("fd00::c")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::12")},
+					end:   xIP{net.ParseIP("fd00::16")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::1")},
+					end:   xIP{net.ParseIP("fd00::5")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::d")},
+					end:   xIP{net.ParseIP("fd00::e")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::10")},
+					end:   xIP{net.ParseIP("fd00::11")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::19")},
+					end:   xIP{net.ParseIP("fd00::1e")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::28")},
+					end:   xIP{net.ParseIP("fd00::32")},
+				},
+			},
+		},
+	},
+	{
+		"Different IP version",
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::0")},
+					end:   xIP{net.ParseIP("fd00::5")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+	},
+	{
+		"Zero - Y",
+		&IPRanges{version: IPv6},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::0")},
+					end:   xIP{net.ParseIP("fd00::5")},
+				},
+			},
+		},
+		&IPRanges{version: IPv6},
+	},
+	{
+		"X - Zero",
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+		&IPRanges{version: IPv6},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+	},
+}
+
+func TestIPRangesDiff(t *testing.T) {
+	t.Parallel()
+	for _, test := range ipRangesDiffTests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			difference := test.rangesX.Diff(test.rangesY)
+			if !difference.Equal(test.want) {
+				t.Fatalf("IPRanges(%v).Diff(%v) = %v, want %v", test.rangesX, test.rangesY, difference, test.want)
+			}
+		})
+	}
+}
+
+var ipRangesIntersectTests = []struct {
+	name    string
+	rangesX *IPRanges
+	rangesY *IPRanges
+	want    *IPRanges
+}{
+	{
+		"X ∩ Y",
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 20).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 25).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 30).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 40).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 50).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 15).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 15).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 8).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 12).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 18).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 22).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 12).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 18).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 20).To4()},
+				},
+			},
+		},
+	},
+	{
+		"X ∩ Y",
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::f")},
+					end:   xIP{net.ParseIP("fd00::f")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::8")},
+					end:   xIP{net.ParseIP("fd00::c")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::12")},
+					end:   xIP{net.ParseIP("fd00::16")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::a")},
+					end:   xIP{net.ParseIP("fd00::14")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::1")},
+					end:   xIP{net.ParseIP("fd00::5")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::19")},
+					end:   xIP{net.ParseIP("fd00::1e")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::28")},
+					end:   xIP{net.ParseIP("fd00::32")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::a")},
+					end:   xIP{net.ParseIP("fd00::c")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::12")},
+					end:   xIP{net.ParseIP("fd00::14")},
+				},
+			},
+		},
+	},
+	{
+		"Different IP version",
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::0")},
+					end:   xIP{net.ParseIP("fd00::5")},
+				},
+			},
+		},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+	},
+	{
+		"Zero ∩ Y",
+		&IPRanges{version: IPv6},
+		&IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::0")},
+					end:   xIP{net.ParseIP("fd00::5")},
+				},
+			},
+		},
+		&IPRanges{version: IPv6},
+	},
+	{
+		"X ∩ Zero",
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+		&IPRanges{version: IPv6},
+		&IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+	},
+}
+
+func TestIPRangesIntersect(t *testing.T) {
+	t.Parallel()
+	for _, test := range ipRangesIntersectTests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			intersection := test.rangesX.Intersect(test.rangesY)
+			if !intersection.Equal(test.want) {
+				t.Fatalf("IPRanges(%v).Intersect(%v) = %v, want %v", test.rangesX, test.rangesY, intersection, test.want)
 			}
 		})
 	}
