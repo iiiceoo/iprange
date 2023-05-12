@@ -1,6 +1,7 @@
 # iprange
 
 [![GoDoc](https://godoc.org/github.com/iiiceoo/iprange?status.svg)](https://godoc.org/github.com/iiiceoo/iprange)
+[![codecov](https://codecov.io/gh/iiiceoo/iprange/branch/main/graph/badge.svg?token=7STDXD53G0)](https://codecov.io/gh/iiiceoo/iprange)
 
 *The package iprange parses IPv4/IPv6 addresses from strings in IP range format and handles interval mathematics between multiple IP ranges.*
 
