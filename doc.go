@@ -1,6 +1,6 @@
 /*
 Package iprange parses IPv4/IPv6 addresses from strings in IP range
-format and handles interval mathematics between multiple IP ranges.
+format.
 
 The following IP range formats are supported:
 
@@ -39,14 +39,23 @@ different IP versions, it won't work:
 
 	res := v4Ranges.Diff(v6Ranges)  // res will be equal to v4Ranges.
 
-The IPRanges can be converted into individual net.IP through its own iterator.
-Continuously call the method Next() to iterate through the IPRanges until
-nil is returned:
+The IPRanges can be converted into multiple net.IP (i.e. IP addresses)
+or *net.IPNet (i.e. subnets) through their own iterators. Continuously
+call the method Next() until nil is returned:
 
-	iter := ranges.Iterator()
+	ipIter := ranges.IPIterator()
 	for {
-		ip := iter.Next()
+		ip := ipIter.Next()
 		if ip == nil {
+			break
+		}
+		// Do someting.
+	}
+
+	cidrIter := ranges.CIDRIterator()
+	for {
+		cidr := cidrIter.Next()
+		if cidr == nil {
 			break
 		}
 		// Do someting.
@@ -54,8 +63,9 @@ nil is returned:
 
 Finally, the inspiration for writing this package comes from
 
-	CNI plugins: https://github.com/containernetworking/plugins
+	CNI plugins:      https://github.com/containernetworking/plugins
 	malfunkt/iprange: https://github.com/malfunkt/iprange
+	netaddr/netaddr:  https://github.com/netaddr/netaddr
 
 both of which are great!
 */
