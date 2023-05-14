@@ -362,30 +362,3 @@ func (rr *IPRanges) String() string {
 
 	return "[" + strings.Join(ss, " ") + "]"
 }
-
-// max returns the larger of x and y.
-func max(x, y int) int {
-	if x > y {
-		return x
-	}
-
-	return y
-}
-
-// maxXIP returns the larger xIP between x and y.
-func maxXIP(x, y xIP) xIP {
-	if x.cmp(y) > 0 {
-		return x
-	}
-
-	return y
-}
-
-// minXIP returns the smaller xIP between x and y.
-func minXIP(x, y xIP) xIP {
-	if x.cmp(y) < 0 {
-		return x
-	}
-
-	return y
-}

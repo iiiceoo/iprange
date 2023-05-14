@@ -78,3 +78,39 @@ func normalizeIP(ip net.IP) net.IP {
 
 	return ip.To16()
 }
+
+// maxXIP returns the larger xIP between x and y.
+func maxXIP(x, y xIP) xIP {
+	if x.cmp(y) > 0 {
+		return x
+	}
+
+	return y
+}
+
+// minXIP returns the smaller xIP between x and y.
+func minXIP(x, y xIP) xIP {
+	if x.cmp(y) < 0 {
+		return x
+	}
+
+	return y
+}
+
+// max returns the larger of x and y.
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+
+	return y
+}
+
+// min returns the smaller of x and y.
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+
+	return y
+}
