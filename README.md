@@ -43,12 +43,12 @@ func main() {
 
 	// Interval mathematics of IP ranges.
 	another, _ := iprange.Parse("172.18.0.0/24")
-	diffRanges := merged.Diff(another)
-	fmt.Printf("The difference between two IP ranges: %s\n", diffRanges)
+	diff := merged.Diff(another)
+	fmt.Printf("The difference between two IP ranges: %s\n", diff)
 
 	// Convert IP ranges to IP addresses.
-	fmt.Printf("Iterate through all %d IP addresses:\n", diffRanges.Size())
-	ipIter := diffRanges.IPIterator()
+	fmt.Printf("Iterate through all %d IP addresses:\n", diff.Size())
+	ipIter := diff.IPIterator()
 	for {
 		ip := ipIter.Next()
 		if ip == nil {
@@ -59,7 +59,7 @@ func main() {
 
 	// Convert IP ranges to subnets.
 	fmt.Println("Iterate through subnets:")
-	cidrIter := diffRanges.CIDRIterator()
+	cidrIter := diff.CIDRIterator()
 	for {
 		cidr := cidrIter.Next()
 		if cidr == nil {
