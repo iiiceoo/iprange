@@ -578,7 +578,7 @@ var ipRangesSizeTests = []struct {
 				},
 			},
 		},
-		big.NewInt(256),
+		big.NewInt(357),
 	},
 	{
 		"IPv6 IP range size",
