@@ -151,7 +151,7 @@ func (rr1 *IPRanges) Equal(rr2 *IPRanges) bool {
 // IPRanges rr.
 func (rr *IPRanges) Size() *big.Int {
 	n := big.NewInt(0)
-	for _, r := range rr.Merge().ranges {
+	for _, r := range rr.ranges {
 		n.Add(n, r.size())
 	}
 
