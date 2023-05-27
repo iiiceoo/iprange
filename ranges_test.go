@@ -1,20 +1,22 @@
 package iprange
 
 import (
+	"errors"
 	"math/big"
 	"net"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 var parseTests = []struct {
-	name          string
-	rs            []string
-	want          *IPRanges
-	err           error
-	isWantedError func(err error) bool
+	name string
+	rs   []string
+	want *IPRanges
+	err  error
 }{
 	{
-		"IPv4 IP ranges",
+		"IPv4",
 		[]string{
 			"172.18.0.1",
 			"172.18.0.0/24",
@@ -43,10 +45,9 @@ var parseTests = []struct {
 			},
 		},
 		nil,
-		nil,
 	},
 	{
-		"IPv6 IP ranges",
+		"IPv6",
 		[]string{
 			"fd00::1",
 			"fd00::/64",
@@ -75,19 +76,18 @@ var parseTests = []struct {
 			},
 		},
 		nil,
-		nil,
 	},
-	{"Empty IP ranges", []string{}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Empty IP range", []string{""}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Invalid CIDR", []string{"172.18.0.0/33"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Invalid start IP address", []string{"172.18.0.a-10"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Invalid start IP address", []string{"172.18.0.a-172.18.0.10"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Invalid end IP address", []string{"172.18.0.1-a"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Invalid end IP address", []string{"172.18.0.1-172.18.0.a"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Start IP address > end IP address", []string{"172.18.0.10-1"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Start IP address > end IP address", []string{"172.18.0.10-172.18.0.1"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Invalid IP address", []string{"172.18.0.a"}, nil, errInvalidIPRangeFormat, IsInvalidIPRangeFormat},
-	{"Dual-stack IP ranges", []string{"172.18.0.1", "fd00::/64"}, nil, errDualStackIPRanges, IsDualStackIPRanges},
+	{"empty", []string{}, nil, errInvalidIPRangeFormat},
+	{"empty", []string{""}, nil, errInvalidIPRangeFormat},
+	{"invalid CIDR", []string{"172.18.0.0/33"}, nil, errInvalidIPRangeFormat},
+	{"invalid start", []string{"172.18.0.a"}, nil, errInvalidIPRangeFormat},
+	{"invalid start", []string{"172.18.0.a-10"}, nil, errInvalidIPRangeFormat},
+	{"invalid start", []string{"172.18.0.a-172.18.0.10"}, nil, errInvalidIPRangeFormat},
+	{"invalid end", []string{"172.18.0.1-a"}, nil, errInvalidIPRangeFormat},
+	{"invalid end", []string{"172.18.0.1-172.18.0.a"}, nil, errInvalidIPRangeFormat},
+	{"start exceeds end", []string{"172.18.0.10-1"}, nil, errInvalidIPRangeFormat},
+	{"start exceeds end", []string{"172.18.0.10-172.18.0.1"}, nil, errInvalidIPRangeFormat},
+	{"dual-stack", []string{"172.18.0.1", "fd00::/64"}, nil, errDualStackIPRanges},
 }
 
 func TestParse(t *testing.T) {
@@ -98,12 +98,12 @@ func TestParse(t *testing.T) {
 			t.Parallel()
 			ranges, err := Parse(test.rs...)
 			if err != nil {
-				if !test.isWantedError(err) {
+				if !errors.Is(err, test.err) {
 					t.Fatalf("Parse(%q) err %q, want %q", test.rs, err, test.err)
 				}
 				return
 			}
-			if !ranges.Equal(test.want) {
+			if !cmp.Equal(ranges, test.want) {
 				t.Fatalf("Parse(%q) = %v, want %v", test.rs, ranges, test.want)
 			}
 		})
@@ -142,7 +142,7 @@ var ipRangesVersionTests = []struct {
 		IPv6,
 	},
 	{
-		"Unknown",
+		"unknown",
 		&IPRanges{},
 		Unknown,
 	},
@@ -169,7 +169,7 @@ var ipRangesContainsTests = []struct {
 	want   bool
 }{
 	{
-		"Contains IP address",
+		"IPv4 contain",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -183,7 +183,7 @@ var ipRangesContainsTests = []struct {
 		true,
 	},
 	{
-		"Contains IP address",
+		"IPv6 contain",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -197,7 +197,7 @@ var ipRangesContainsTests = []struct {
 		true,
 	},
 	{
-		"Not contains IP address",
+		"IPv4 not contain",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -211,7 +211,7 @@ var ipRangesContainsTests = []struct {
 		false,
 	},
 	{
-		"Not contains IP address",
+		"IPv6 not contain",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -225,7 +225,7 @@ var ipRangesContainsTests = []struct {
 		false,
 	},
 	{
-		"Different IP versions",
+		"diff version",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -239,7 +239,7 @@ var ipRangesContainsTests = []struct {
 		false,
 	},
 	{
-		"Different IP versions",
+		"diff version",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -253,13 +253,13 @@ var ipRangesContainsTests = []struct {
 		false,
 	},
 	{
-		"Different IP versions",
+		"diff version",
 		&IPRanges{},
 		net.IPv4(172, 18, 0, 1),
 		false,
 	},
 	{
-		"Invalid IP address",
+		"invalid IP",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -295,7 +295,7 @@ var ipRangesMergeEqualTests = []struct {
 	want    bool
 }{
 	{
-		"X == Y",
+		"IPv4",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -321,7 +321,7 @@ var ipRangesMergeEqualTests = []struct {
 		true,
 	},
 	{
-		"X == Y",
+		"IPv6",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -347,13 +347,13 @@ var ipRangesMergeEqualTests = []struct {
 		true,
 	},
 	{
-		"X == Y",
+		"zero",
 		&IPRanges{},
 		&IPRanges{},
 		true,
 	},
 	{
-		"Different IP version",
+		"diff version",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -397,7 +397,7 @@ var ipRangesEqualTests = []struct {
 	want    bool
 }{
 	{
-		"X == Y",
+		"IPv4 equal",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -427,7 +427,7 @@ var ipRangesEqualTests = []struct {
 		true,
 	},
 	{
-		"X == Y",
+		"IPv6 equal",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -457,13 +457,13 @@ var ipRangesEqualTests = []struct {
 		true,
 	},
 	{
-		"X == Y",
+		"zero",
 		&IPRanges{},
 		&IPRanges{},
 		true,
 	},
 	{
-		"X != Y",
+		"IPv4 not equal",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -489,7 +489,7 @@ var ipRangesEqualTests = []struct {
 		false,
 	},
 	{
-		"X != Y",
+		"IPv6 not equal",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -519,7 +519,7 @@ var ipRangesEqualTests = []struct {
 		false,
 	},
 	{
-		"Different IP version",
+		"diff version",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -564,7 +564,7 @@ var ipRangesSizeTests = []struct {
 	want   *big.Int
 }{
 	{
-		"IPv4 IP ranges size",
+		"IPv4",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -581,7 +581,7 @@ var ipRangesSizeTests = []struct {
 		big.NewInt(357),
 	},
 	{
-		"IPv6 IP range size",
+		"IPv6",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -594,7 +594,7 @@ var ipRangesSizeTests = []struct {
 		size,
 	},
 	{
-		"Zero",
+		"zero",
 		&IPRanges{},
 		big.NewInt(0),
 	},
@@ -620,7 +620,7 @@ var ipRangesMergeTests = []struct {
 	want   *IPRanges
 }{
 	{
-		"Multiple IP ranges",
+		"multiple",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -653,7 +653,7 @@ var ipRangesMergeTests = []struct {
 		},
 	},
 	{
-		"Single IP range",
+		"one",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -682,7 +682,7 @@ func TestIPRangesMerge(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			merged := test.ranges.Merge()
-			if !merged.Equal(test.want) {
+			if !cmp.Equal(merged, test.want) {
 				t.Fatalf("IPRanges(%v).Merge() = %v, want %v", test.ranges, merged, test.want)
 			}
 		})
@@ -696,7 +696,7 @@ var ipRangesUnionTests = []struct {
 	want    *IPRanges
 }{
 	{
-		"X U Y",
+		"IPv4",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -734,7 +734,7 @@ var ipRangesUnionTests = []struct {
 		},
 	},
 	{
-		"X U Y",
+		"IPv6",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -772,7 +772,7 @@ var ipRangesUnionTests = []struct {
 		},
 	},
 	{
-		"Different IP version",
+		"diff version",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -810,7 +810,7 @@ func TestIPRangesUnion(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			union := test.rangesX.Union(test.rangesY)
-			if !union.Equal(test.want) {
+			if !cmp.Equal(union, test.want) {
 				t.Fatalf("IPRanges(%v).Union(%v) = %v, want %v", test.rangesX, test.rangesY, union, test.want)
 			}
 		})
@@ -824,7 +824,7 @@ var ipRangesDiffTests = []struct {
 	want    *IPRanges
 }{
 	{
-		"X - Y",
+		"IPv4",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -890,7 +890,7 @@ var ipRangesDiffTests = []struct {
 		},
 	},
 	{
-		"X - Y",
+		"IPv6",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -956,7 +956,7 @@ var ipRangesDiffTests = []struct {
 		},
 	},
 	{
-		"Different IP version",
+		"diff version",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -986,7 +986,7 @@ var ipRangesDiffTests = []struct {
 		},
 	},
 	{
-		"Zero - Y",
+		"zero-",
 		&IPRanges{version: IPv6},
 		&IPRanges{
 			version: IPv6,
@@ -1000,7 +1000,7 @@ var ipRangesDiffTests = []struct {
 		&IPRanges{version: IPv6},
 	},
 	{
-		"X - Zero",
+		"-zero",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -1030,7 +1030,7 @@ func TestIPRangesDiff(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			difference := test.rangesX.Diff(test.rangesY)
-			if !difference.Equal(test.want) {
+			if !cmp.Equal(difference, test.want) {
 				t.Fatalf("IPRanges(%v).Diff(%v) = %v, want %v", test.rangesX, test.rangesY, difference, test.want)
 			}
 		})
@@ -1044,7 +1044,7 @@ var ipRangesIntersectTests = []struct {
 	want    *IPRanges
 }{
 	{
-		"X ∩ Y",
+		"IPv4",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -1098,7 +1098,7 @@ var ipRangesIntersectTests = []struct {
 		},
 	},
 	{
-		"X ∩ Y",
+		"IPv6",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -1152,7 +1152,7 @@ var ipRangesIntersectTests = []struct {
 		},
 	},
 	{
-		"Different IP version",
+		"diff version",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -1182,7 +1182,7 @@ var ipRangesIntersectTests = []struct {
 		},
 	},
 	{
-		"Zero ∩ Y",
+		"zero-",
 		&IPRanges{version: IPv6},
 		&IPRanges{
 			version: IPv6,
@@ -1196,7 +1196,7 @@ var ipRangesIntersectTests = []struct {
 		&IPRanges{version: IPv6},
 	},
 	{
-		"X ∩ Zero",
+		"-zero",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -1226,7 +1226,7 @@ func TestIPRangesIntersect(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			intersection := test.rangesX.Intersect(test.rangesY)
-			if !intersection.Equal(test.want) {
+			if !cmp.Equal(intersection, test.want) {
 				t.Fatalf("IPRanges(%v).Intersect(%v) = %v, want %v", test.rangesX, test.rangesY, intersection, test.want)
 			}
 		})
@@ -1239,7 +1239,7 @@ var ipRangesStringTests = []struct {
 	want   string
 }{
 	{
-		"IP ranges string",
+		"range",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -1256,7 +1256,7 @@ var ipRangesStringTests = []struct {
 		"[172.18.0.100-172.18.0.255 172.18.0.0-172.18.0.200]",
 	},
 	{
-		"Single IP address string",
+		"single",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -1269,7 +1269,7 @@ var ipRangesStringTests = []struct {
 		"[fd00::1]",
 	},
 	{
-		"Zero string",
+		"zero",
 		&IPRanges{},
 		"[]",
 	},

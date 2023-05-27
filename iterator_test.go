@@ -2,8 +2,9 @@ package iprange
 
 import (
 	"net"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 var ipRangesIPIteratorTests = []struct {
@@ -12,7 +13,7 @@ var ipRangesIPIteratorTests = []struct {
 	want   []net.IP
 }{
 	{
-		"Iterate through the IP addresses in IPv4 IP ranges",
+		"IPv4",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -39,7 +40,7 @@ var ipRangesIPIteratorTests = []struct {
 		},
 	},
 	{
-		"Iterate through the IP addresses in IPv6 IP ranges",
+		"IPv6",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -66,7 +67,7 @@ var ipRangesIPIteratorTests = []struct {
 		},
 	},
 	{
-		"Empty IP ranges",
+		"zero",
 		&IPRanges{},
 		nil,
 	},
@@ -89,7 +90,7 @@ func TestIPRangesIPIterator(t *testing.T) {
 				ips = append(ips, ip)
 			}
 
-			if !reflect.DeepEqual(ips, test.want) {
+			if !cmp.Equal(ips, test.want) {
 				t.Fatalf("IPRanges(%v).IPIterator() = %v, want %v", test.ranges, ips, test.want)
 			}
 		})
@@ -102,7 +103,7 @@ var ipRangesCIDRIteratorTests = []struct {
 	want   []*net.IPNet
 }{
 	{
-		"Iterate through the CIDRs in IPv4 IP ranges",
+		"IPv4",
 		&IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -132,7 +133,7 @@ var ipRangesCIDRIteratorTests = []struct {
 		},
 	},
 	{
-		"Iterate through the CIDRs in IPv6 IP ranges",
+		"IPv6",
 		&IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -162,7 +163,7 @@ var ipRangesCIDRIteratorTests = []struct {
 		},
 	},
 	{
-		"Empty IP ranges",
+		"zero",
 		&IPRanges{},
 		nil,
 	},
@@ -185,7 +186,7 @@ func TestIPRangesCIDRIterator(t *testing.T) {
 				ipNets = append(ipNets, ipNet)
 			}
 
-			if !reflect.DeepEqual(ipNets, test.want) {
+			if !cmp.Equal(ipNets, test.want) {
 				t.Fatalf("IPRanges(%v).CIDRIterator() = %v, want %v", test.ranges, ipNets, test.want)
 			}
 		})
