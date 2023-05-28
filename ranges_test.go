@@ -16,14 +16,14 @@ var parseTests = []struct {
 	err  error
 }{
 	{
-		"IPv4",
-		[]string{
+		name: "IPv4",
+		rs: []string{
 			"172.18.0.1",
 			"172.18.0.0/24",
 			"172.18.0.1-10",
 			"172.18.0.1-172.18.1.10",
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -44,17 +44,17 @@ var parseTests = []struct {
 				},
 			},
 		},
-		nil,
+		err: nil,
 	},
 	{
-		"IPv6",
-		[]string{
+		name: "IPv6",
+		rs: []string{
 			"fd00::1",
 			"fd00::/64",
 			"fd00::1-a",
 			"fd00::1-fd00::1:a",
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -75,7 +75,7 @@ var parseTests = []struct {
 				},
 			},
 		},
-		nil,
+		err: nil,
 	},
 	{"empty", []string{}, nil, errInvalidIPRangeFormat},
 	{"empty", []string{""}, nil, errInvalidIPRangeFormat},
@@ -116,8 +116,8 @@ var ipRangesVersionTests = []struct {
 	want   family
 }{
 	{
-		"IPv4",
-		&IPRanges{
+		name: "IPv4",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -126,11 +126,11 @@ var ipRangesVersionTests = []struct {
 				},
 			},
 		},
-		IPv4,
+		want: IPv4,
 	},
 	{
-		"IPv6",
-		&IPRanges{
+		name: "IPv6",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -139,12 +139,12 @@ var ipRangesVersionTests = []struct {
 				},
 			},
 		},
-		IPv6,
+		want: IPv6,
 	},
 	{
-		"unknown",
-		&IPRanges{},
-		Unknown,
+		name:   "unknown",
+		ranges: &IPRanges{},
+		want:   Unknown,
 	},
 }
 
@@ -169,8 +169,8 @@ var ipRangesContainsTests = []struct {
 	want   bool
 }{
 	{
-		"IPv4 contain",
-		&IPRanges{
+		name: "IPv4 contain",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -179,12 +179,12 @@ var ipRangesContainsTests = []struct {
 				},
 			},
 		},
-		net.IPv4(172, 18, 0, 1),
-		true,
+		ip:   net.IPv4(172, 18, 0, 1),
+		want: true,
 	},
 	{
-		"IPv6 contain",
-		&IPRanges{
+		name: "IPv6 contain",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -193,12 +193,12 @@ var ipRangesContainsTests = []struct {
 				},
 			},
 		},
-		net.ParseIP("fd00::2"),
-		true,
+		ip:   net.ParseIP("fd00::2"),
+		want: true,
 	},
 	{
-		"IPv4 not contain",
-		&IPRanges{
+		name: "IPv4 not contain",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -207,12 +207,12 @@ var ipRangesContainsTests = []struct {
 				},
 			},
 		},
-		net.IPv4(172, 18, 0, 0),
-		false,
+		ip:   net.IPv4(172, 18, 0, 0),
+		want: false,
 	},
 	{
-		"IPv6 not contain",
-		&IPRanges{
+		name: "IPv6 not contain",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -221,12 +221,12 @@ var ipRangesContainsTests = []struct {
 				},
 			},
 		},
-		net.ParseIP("fd00::0"),
-		false,
+		ip:   net.ParseIP("fd00::0"),
+		want: false,
 	},
 	{
-		"diff version",
-		&IPRanges{
+		name: "diff version",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -235,12 +235,12 @@ var ipRangesContainsTests = []struct {
 				},
 			},
 		},
-		net.ParseIP("fd00::2"),
-		false,
+		ip:   net.ParseIP("fd00::2"),
+		want: false,
 	},
 	{
-		"diff version",
-		&IPRanges{
+		name: "diff version",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -249,18 +249,18 @@ var ipRangesContainsTests = []struct {
 				},
 			},
 		},
-		net.IPv4(172, 18, 0, 1),
-		false,
+		ip:   net.IPv4(172, 18, 0, 1),
+		want: false,
 	},
 	{
-		"diff version",
-		&IPRanges{},
-		net.IPv4(172, 18, 0, 1),
-		false,
+		name:   "diff version",
+		ranges: &IPRanges{},
+		ip:     net.IPv4(172, 18, 0, 1),
+		want:   false,
 	},
 	{
-		"invalid IP",
-		&IPRanges{
+		name: "invalid IP",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -269,8 +269,8 @@ var ipRangesContainsTests = []struct {
 				},
 			},
 		},
-		nil,
-		false,
+		ip:   nil,
+		want: false,
 	},
 }
 
@@ -295,8 +295,8 @@ var ipRangesMergeEqualTests = []struct {
 	want    bool
 }{
 	{
-		"IPv4",
-		&IPRanges{
+		name: "IPv4",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -309,7 +309,7 @@ var ipRangesMergeEqualTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -318,11 +318,11 @@ var ipRangesMergeEqualTests = []struct {
 				},
 			},
 		},
-		true,
+		want: true,
 	},
 	{
-		"IPv6",
-		&IPRanges{
+		name: "IPv6",
+		rangesX: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -335,7 +335,7 @@ var ipRangesMergeEqualTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -344,17 +344,17 @@ var ipRangesMergeEqualTests = []struct {
 				},
 			},
 		},
-		true,
+		want: true,
 	},
 	{
-		"zero",
-		&IPRanges{},
-		&IPRanges{},
-		true,
+		name:    "zero",
+		rangesX: &IPRanges{},
+		rangesY: &IPRanges{},
+		want:    true,
 	},
 	{
-		"diff version",
-		&IPRanges{
+		name: "diff version",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -363,7 +363,7 @@ var ipRangesMergeEqualTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -372,7 +372,7 @@ var ipRangesMergeEqualTests = []struct {
 				},
 			},
 		},
-		false,
+		want: false,
 	},
 }
 
@@ -397,8 +397,8 @@ var ipRangesEqualTests = []struct {
 	want    bool
 }{
 	{
-		"IPv4 equal",
-		&IPRanges{
+		name: "IPv4 equal",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -411,7 +411,7 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -424,11 +424,11 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		true,
+		want: true,
 	},
 	{
-		"IPv6 equal",
-		&IPRanges{
+		name: "IPv6 equal",
+		rangesX: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -441,7 +441,7 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -454,17 +454,17 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		true,
+		want: true,
 	},
 	{
-		"zero",
-		&IPRanges{},
-		&IPRanges{},
-		true,
+		name:    "zero",
+		rangesX: &IPRanges{},
+		rangesY: &IPRanges{},
+		want:    true,
 	},
 	{
-		"IPv4 not equal",
-		&IPRanges{
+		name: "IPv4 not equal",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -477,7 +477,7 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -486,11 +486,11 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		false,
+		want: false,
 	},
 	{
-		"IPv6 not equal",
-		&IPRanges{
+		name: "IPv6 not equal",
+		rangesX: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -503,7 +503,7 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -516,11 +516,11 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		false,
+		want: false,
 	},
 	{
-		"diff version",
-		&IPRanges{
+		name: "diff version",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -529,7 +529,7 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -538,7 +538,7 @@ var ipRangesEqualTests = []struct {
 				},
 			},
 		},
-		false,
+		want: false,
 	},
 }
 
@@ -564,8 +564,8 @@ var ipRangesSizeTests = []struct {
 	want   *big.Int
 }{
 	{
-		"IPv4",
-		&IPRanges{
+		name: "IPv4",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -578,11 +578,11 @@ var ipRangesSizeTests = []struct {
 				},
 			},
 		},
-		big.NewInt(357),
+		want: big.NewInt(357),
 	},
 	{
-		"IPv6",
-		&IPRanges{
+		name: "IPv6",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -591,12 +591,12 @@ var ipRangesSizeTests = []struct {
 				},
 			},
 		},
-		size,
+		want: size,
 	},
 	{
-		"zero",
-		&IPRanges{},
-		big.NewInt(0),
+		name:   "zero",
+		ranges: &IPRanges{},
+		want:   big.NewInt(0),
 	},
 }
 
@@ -620,8 +620,8 @@ var ipRangesMergeTests = []struct {
 	want   *IPRanges
 }{
 	{
-		"multiple",
-		&IPRanges{
+		name: "multiple",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -638,7 +638,7 @@ var ipRangesMergeTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -653,8 +653,8 @@ var ipRangesMergeTests = []struct {
 		},
 	},
 	{
-		"one",
-		&IPRanges{
+		name: "one",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -663,7 +663,7 @@ var ipRangesMergeTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -696,8 +696,8 @@ var ipRangesUnionTests = []struct {
 	want    *IPRanges
 }{
 	{
-		"IPv4",
-		&IPRanges{
+		name: "IPv4",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -710,7 +710,7 @@ var ipRangesUnionTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -719,7 +719,7 @@ var ipRangesUnionTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -734,8 +734,8 @@ var ipRangesUnionTests = []struct {
 		},
 	},
 	{
-		"IPv6",
-		&IPRanges{
+		name: "IPv6",
+		rangesX: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -748,7 +748,7 @@ var ipRangesUnionTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -757,7 +757,7 @@ var ipRangesUnionTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -772,8 +772,8 @@ var ipRangesUnionTests = []struct {
 		},
 	},
 	{
-		"diff version",
-		&IPRanges{
+		name: "diff version",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -782,7 +782,7 @@ var ipRangesUnionTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -791,7 +791,7 @@ var ipRangesUnionTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -824,8 +824,8 @@ var ipRangesDiffTests = []struct {
 	want    *IPRanges
 }{
 	{
-		"IPv4",
-		&IPRanges{
+		name: "IPv4",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -846,7 +846,7 @@ var ipRangesDiffTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -863,7 +863,7 @@ var ipRangesDiffTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -890,8 +890,8 @@ var ipRangesDiffTests = []struct {
 		},
 	},
 	{
-		"IPv6",
-		&IPRanges{
+		name: "IPv6",
+		rangesX: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -912,7 +912,7 @@ var ipRangesDiffTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -929,7 +929,7 @@ var ipRangesDiffTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -956,8 +956,8 @@ var ipRangesDiffTests = []struct {
 		},
 	},
 	{
-		"diff version",
-		&IPRanges{
+		name: "diff version",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -966,7 +966,7 @@ var ipRangesDiffTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -975,7 +975,7 @@ var ipRangesDiffTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -986,9 +986,9 @@ var ipRangesDiffTests = []struct {
 		},
 	},
 	{
-		"zero-",
-		&IPRanges{version: IPv6},
-		&IPRanges{
+		name:    "zero-",
+		rangesX: &IPRanges{version: IPv6},
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -997,11 +997,11 @@ var ipRangesDiffTests = []struct {
 				},
 			},
 		},
-		&IPRanges{version: IPv6},
+		want: &IPRanges{version: IPv6},
 	},
 	{
-		"-zero",
-		&IPRanges{
+		name: "-zero",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1010,8 +1010,8 @@ var ipRangesDiffTests = []struct {
 				},
 			},
 		},
-		&IPRanges{version: IPv6},
-		&IPRanges{
+		rangesY: &IPRanges{version: IPv6},
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1044,8 +1044,8 @@ var ipRangesIntersectTests = []struct {
 	want    *IPRanges
 }{
 	{
-		"IPv4",
-		&IPRanges{
+		name: "IPv4",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1066,7 +1066,7 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1083,7 +1083,7 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1098,8 +1098,8 @@ var ipRangesIntersectTests = []struct {
 		},
 	},
 	{
-		"IPv6",
-		&IPRanges{
+		name: "IPv6",
+		rangesX: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -1116,7 +1116,7 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -1137,7 +1137,7 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -1152,8 +1152,8 @@ var ipRangesIntersectTests = []struct {
 		},
 	},
 	{
-		"diff version",
-		&IPRanges{
+		name: "diff version",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1162,7 +1162,7 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -1171,7 +1171,7 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		&IPRanges{
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1182,9 +1182,9 @@ var ipRangesIntersectTests = []struct {
 		},
 	},
 	{
-		"zero-",
-		&IPRanges{version: IPv6},
-		&IPRanges{
+		name:    "zero-",
+		rangesX: &IPRanges{version: IPv6},
+		rangesY: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -1193,11 +1193,11 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		&IPRanges{version: IPv6},
+		want: &IPRanges{version: IPv6},
 	},
 	{
-		"-zero",
-		&IPRanges{
+		name: "-zero",
+		rangesX: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1206,8 +1206,8 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		&IPRanges{version: IPv6},
-		&IPRanges{
+		rangesY: &IPRanges{version: IPv6},
+		want: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1239,8 +1239,8 @@ var ipRangesStringTests = []struct {
 	want   string
 }{
 	{
-		"range",
-		&IPRanges{
+		name: "range",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -1253,11 +1253,11 @@ var ipRangesStringTests = []struct {
 				},
 			},
 		},
-		"[172.18.0.100-172.18.0.255 172.18.0.0-172.18.0.200]",
+		want: "[172.18.0.100-172.18.0.255 172.18.0.0-172.18.0.200]",
 	},
 	{
-		"single",
-		&IPRanges{
+		name: "single",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -1266,12 +1266,12 @@ var ipRangesStringTests = []struct {
 				},
 			},
 		},
-		"[fd00::1]",
+		want: "[fd00::1]",
 	},
 	{
-		"zero",
-		&IPRanges{},
-		"[]",
+		name:   "zero",
+		ranges: &IPRanges{},
+		want:   "[]",
 	},
 }
 

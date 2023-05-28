@@ -13,8 +13,8 @@ var ipRangesIPIteratorTests = []struct {
 	want   []net.IP
 }{
 	{
-		"IPv4",
-		&IPRanges{
+		name: "IPv4",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -31,7 +31,7 @@ var ipRangesIPIteratorTests = []struct {
 				},
 			},
 		},
-		[]net.IP{
+		want: []net.IP{
 			net.IPv4(172, 18, 0, 10).To4(),
 			net.IPv4(172, 18, 0, 2).To4(),
 			net.IPv4(172, 18, 0, 3).To4(),
@@ -40,8 +40,8 @@ var ipRangesIPIteratorTests = []struct {
 		},
 	},
 	{
-		"IPv6",
-		&IPRanges{
+		name: "IPv6",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -58,7 +58,7 @@ var ipRangesIPIteratorTests = []struct {
 				},
 			},
 		},
-		[]net.IP{
+		want: []net.IP{
 			net.ParseIP("fd00::a"),
 			net.ParseIP("fd00::2"),
 			net.ParseIP("fd00::3"),
@@ -67,9 +67,9 @@ var ipRangesIPIteratorTests = []struct {
 		},
 	},
 	{
-		"zero",
-		&IPRanges{},
-		nil,
+		name:   "zero",
+		ranges: &IPRanges{},
+		want:   nil,
 	},
 }
 
@@ -103,8 +103,8 @@ var ipRangesCIDRIteratorTests = []struct {
 	want   []*net.IPNet
 }{
 	{
-		"IPv4",
-		&IPRanges{
+		name: "IPv4",
+		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
 				{
@@ -117,7 +117,7 @@ var ipRangesCIDRIteratorTests = []struct {
 				},
 			},
 		},
-		[]*net.IPNet{
+		want: []*net.IPNet{
 			{
 				IP:   net.IPv4(172, 18, 1, 0).To4(),
 				Mask: net.CIDRMask(24, 32),
@@ -133,8 +133,8 @@ var ipRangesCIDRIteratorTests = []struct {
 		},
 	},
 	{
-		"IPv6",
-		&IPRanges{
+		name: "IPv6",
+		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
 				{
@@ -147,7 +147,7 @@ var ipRangesCIDRIteratorTests = []struct {
 				},
 			},
 		},
-		[]*net.IPNet{
+		want: []*net.IPNet{
 			{
 				IP:   net.ParseIP("fd00::0"),
 				Mask: net.CIDRMask(64, 128),
@@ -163,9 +163,9 @@ var ipRangesCIDRIteratorTests = []struct {
 		},
 	},
 	{
-		"zero",
-		&IPRanges{},
-		nil,
+		name:   "zero",
+		ranges: &IPRanges{},
+		want:   nil,
 	},
 }
 
