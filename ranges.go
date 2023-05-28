@@ -160,6 +160,8 @@ func (rr *IPRanges) Size() *big.Int {
 
 // Merge merges the duplicate parts of multiple ipRanges in rr and sort
 // them by their respective starting xIP.
+//
+// It is safe for simultaneous use by multiple goroutines.
 func (rr *IPRanges) Merge() *IPRanges {
 	version := rr.version
 	n := len(rr.ranges)
@@ -206,8 +208,10 @@ func (rr *IPRanges) Merge() *IPRanges {
 // Union calculates the union of IPRanges rr and rs with the same IP
 // version. The result is always merged (ordered and deduplicated).
 //
-//	do:  [172.18.0.20-30, 172.18.0.1-25] U [172.18.0.5-25]
-//	res: [172.18.0.1-30]
+//	Input:  [172.18.0.20-30, 172.18.0.1-25] U [172.18.0.5-25]
+//	Output: [172.18.0.1-30]
+//
+// It is safe for simultaneous use by multiple goroutines.
 func (rr *IPRanges) Union(rs *IPRanges) *IPRanges {
 	if rr.version != rs.version {
 		return rr.Merge()
@@ -224,8 +228,10 @@ func (rr *IPRanges) Union(rs *IPRanges) *IPRanges {
 // Diff calculates the difference of IPRanges rr and rs with the same IP
 // version. The result is always merged (ordered and deduplicated).
 //
-//	do:  [172.18.0.20-30, 172.18.0.1-25] - [172.18.0.5-25]
-//	res: [172.18.0.1-4, 172.18.0.26-30]
+//	Input:  [172.18.0.20-30, 172.18.0.1-25] - [172.18.0.5-25]
+//	Output: [172.18.0.1-4, 172.18.0.26-30]
+//
+// It is safe for simultaneous use by multiple goroutines.
 func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
 	if rr.version != rs.version {
 		return rr.Merge()
@@ -313,8 +319,10 @@ func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
 // Intersect calculates the intersection of IPRanges rr and rs with the
 // same IP version. The result is always merged (ordered and deduplicated).
 //
-//	do:  [172.18.0.20-30, 172.18.0.1-25] ∩ [172.18.0.5-25]
-//	res: [172.18.0.5-25]
+//	Input:  [172.18.0.20-30, 172.18.0.1-25] ∩ [172.18.0.5-25]
+//	Output: [172.18.0.5-25]
+//
+// It is safe for simultaneous use by multiple goroutines.
 func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
 	if rr.version != rs.version {
 		return rr.Merge()
