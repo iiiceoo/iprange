@@ -362,7 +362,7 @@ func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
 	for i, j := 0, 0; i < n1 && j < n2; {
 		start := maxXIP(omr[i].start, tmr[j].start)
 		end := minXIP(omr[i].end, tmr[j].end)
-		if start.cmp(end) < 0 {
+		if start.cmp(end) <= 0 {
 			ranges = append(ranges, ipRange{
 				start: start,
 				end:   end,
