@@ -1091,6 +1091,10 @@ var ipRangesIntersectTests = []struct {
 					end:   xIP{net.IPv4(172, 18, 0, 12).To4()},
 				},
 				{
+					start: xIP{net.IPv4(172, 18, 0, 15).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 15).To4()},
+				},
+				{
 					start: xIP{net.IPv4(172, 18, 0, 18).To4()},
 					end:   xIP{net.IPv4(172, 18, 0, 20).To4()},
 				},
@@ -1143,6 +1147,10 @@ var ipRangesIntersectTests = []struct {
 				{
 					start: xIP{net.ParseIP("fd00::a")},
 					end:   xIP{net.ParseIP("fd00::c")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::f")},
+					end:   xIP{net.ParseIP("fd00::f")},
 				},
 				{
 					start: xIP{net.ParseIP("fd00::12")},
