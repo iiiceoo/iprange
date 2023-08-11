@@ -205,6 +205,27 @@ func (rr *IPRanges) Merge() *IPRanges {
 	}
 }
 
+// IsOverlap reports whether IPRanges rr have overlapping parts.
+func (rr *IPRanges) IsOverlap() bool {
+	n := len(rr.ranges)
+	if n <= 1 {
+		return false
+	}
+
+	rc := rr.ranges
+	sort.Slice(rc, func(i, j int) bool {
+		return rc[i].start.cmp(rc[j].start) < 0
+	})
+
+	for i := 0; i < n-1; i++ {
+		if rc[i].end.cmp(rc[i+1].start) >= 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Union calculates the union of IPRanges rr and rs with the same IP
 // version. The result is always merged (ordered and deduplicated).
 //

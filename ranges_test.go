@@ -1233,6 +1233,69 @@ func TestIPRangesIntersect(t *testing.T) {
 	}
 }
 
+var ipRangesIsOverlapTests = []struct {
+	name   string
+	ranges *IPRanges
+	want   bool
+}{
+	{
+		name: "IPv4",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 20).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 15).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
+				},
+			},
+		},
+		want: true,
+	},
+	{
+		name: "IPv6",
+		ranges: &IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::ab")},
+					end:   xIP{net.ParseIP("fd00::ff")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::0")},
+					end:   xIP{net.ParseIP("fd00::aa")},
+				},
+			},
+		},
+		want: false,
+	},
+	{
+		name:   "zero",
+		ranges: &IPRanges{},
+		want:   false,
+	},
+}
+
+func TestIPRangesIsOverlap(t *testing.T) {
+	t.Parallel()
+	for _, test := range ipRangesIsOverlapTests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			overlap := test.ranges.IsOverlap()
+			if !cmp.Equal(overlap, test.want) {
+				t.Fatalf("IPRanges(%v).IsOverlap() = %v, want %v", test.ranges, overlap, test.want)
+			}
+		})
+	}
+}
+
 var ipRangesStringTests = []struct {
 	name   string
 	ranges *IPRanges
