@@ -107,7 +107,7 @@ func ExampleIPRanges_Size() {
 }
 
 func ExampleIPRanges_Merge() {
-	ranges, err := iprange.Parse("172.18.1.1", "172.18.0.100-200", "172.18.0.1-150")
+	ranges, err := iprange.Parse("172.18.0.201", "172.18.0.100-200", "172.18.0.1-150")
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
@@ -115,8 +115,8 @@ func ExampleIPRanges_Merge() {
 	fmt.Println(ranges)
 	fmt.Println(ranges.Merge())
 	// Output:
-	// [172.18.1.1 172.18.0.100-172.18.0.200 172.18.0.1-172.18.0.150]
-	// [172.18.0.1-172.18.0.200 172.18.1.1]
+	// [172.18.0.201 172.18.0.100-172.18.0.200 172.18.0.1-172.18.0.150]
+	// [172.18.0.1-172.18.0.201]
 }
 
 func ExampleIPRanges_Union() {

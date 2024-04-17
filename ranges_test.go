@@ -633,6 +633,10 @@ var ipRangesMergeTests = []struct {
 					end:   xIP{net.IPv4(172, 18, 0, 200).To4()},
 				},
 				{
+					start: xIP{net.IPv4(172, 18, 0, 211).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 211).To4()},
+				},
+				{
 					start: xIP{net.IPv4(172, 18, 0, 220).To4()},
 					end:   xIP{net.IPv4(172, 18, 0, 230).To4()},
 				},
@@ -643,7 +647,7 @@ var ipRangesMergeTests = []struct {
 			ranges: []ipRange{
 				{
 					start: xIP{net.IPv4(172, 18, 0, 0).To4()},
-					end:   xIP{net.IPv4(172, 18, 0, 210).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 211).To4()},
 				},
 				{
 					start: xIP{net.IPv4(172, 18, 0, 220).To4()},
