@@ -188,6 +188,11 @@ func (rr *IPRanges) Merge() *IPRanges {
 			continue
 		}
 
+		if merged[cur].end.next().cmp(r.start) == 0 {
+			merged[cur].end = r.end
+			continue
+		}
+
 		if merged[cur].end.cmp(r.start) < 0 {
 			merged = append(merged, r)
 			cur++
