@@ -1363,3 +1363,62 @@ func TestIPRangesString(t *testing.T) {
 		})
 	}
 }
+
+var ipRangesStringsTests = []struct {
+	name   string
+	ranges *IPRanges
+	want   []string
+}{
+	{
+		name: "range",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 100)},
+					end:   xIP{net.IPv4(172, 18, 0, 255)},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 0)},
+					end:   xIP{net.IPv4(172, 18, 0, 200)},
+				},
+			},
+		},
+		want: []string{
+			"172.18.0.100-172.18.0.255",
+			"172.18.0.0-172.18.0.200",
+		},
+	},
+	{
+		name: "single",
+		ranges: &IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::1")},
+					end:   xIP{net.ParseIP("fd00::1")},
+				},
+			},
+		},
+		want: []string{"fd00::1"},
+	},
+	{
+		name:   "zero",
+		ranges: &IPRanges{},
+		want:   nil,
+	},
+}
+
+func TestIPRangesStrings(t *testing.T) {
+	t.Parallel()
+	for _, test := range ipRangesStringsTests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			ss := test.ranges.Strings()
+			if !cmp.Equal(ss, test.want) {
+				t.Fatalf("IPRanges(%v).Strings() = %v, want %v", test.ranges, ss, test.want)
+			}
+		})
+	}
+}
