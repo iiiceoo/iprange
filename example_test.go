@@ -3,6 +3,7 @@ package iprange_test
 import (
 	"fmt"
 	"log"
+	"math/big"
 	"net"
 
 	"github.com/iiiceoo/iprange"
@@ -195,9 +196,21 @@ func ExampleIPRanges_IPIterator() {
 		}
 		fmt.Println(ip)
 	}
+
+	iter.Reset()
+	n := big.NewInt(2)
+	for {
+		ip := iter.NextN(n)
+		if ip == nil {
+			break
+		}
+		fmt.Println(ip)
+	}
+
 	// Output:
 	// 172.18.0.1
 	// 172.18.0.2
+	// 172.18.0.3
 	// 172.18.0.3
 }
 

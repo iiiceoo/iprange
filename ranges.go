@@ -1,7 +1,6 @@
 package iprange
 
 import (
-	"fmt"
 	"math/big"
 	"net"
 	"sort"
@@ -58,7 +57,7 @@ type IPRanges struct {
 // there are both IPv4 and IPv6 addresses.
 func Parse(rs ...string) (*IPRanges, error) {
 	if len(rs) == 0 {
-		return nil, fmt.Errorf("%w: []", errInvalidIPRangeFormat)
+		return &IPRanges{}, nil
 	}
 
 	version := Unknown

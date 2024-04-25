@@ -77,7 +77,7 @@ var parseTests = []struct {
 		},
 		err: nil,
 	},
-	{"empty", []string{}, nil, errInvalidIPRangeFormat},
+	{"empty", []string{}, &IPRanges{}, nil},
 	{"empty", []string{""}, nil, errInvalidIPRangeFormat},
 	{"invalid CIDR", []string{"172.18.0.0/33"}, nil, errInvalidIPRangeFormat},
 	{"invalid start", []string{"172.18.0.a"}, nil, errInvalidIPRangeFormat},
