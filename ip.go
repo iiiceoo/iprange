@@ -36,6 +36,20 @@ func (ip xIP) next() xIP {
 	return xIP{intToIP(i)}
 }
 
+// nextN returns the next nth IP address of xIP.
+func (ip xIP) nextN(n *big.Int) xIP {
+	if n.Sign() == 0 {
+		cp := make(net.IP, len(ip.IP))
+		copy(cp, ip.IP)
+		return xIP{cp}
+	}
+
+	i := ipToInt(ip.IP)
+	i.Add(i, n)
+
+	return xIP{intToIP(i)}
+}
+
 // prev returns the previous IP address of xIP.
 func (ip xIP) prev() xIP {
 	i := ipToInt(ip.IP)
