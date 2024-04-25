@@ -132,9 +132,25 @@ func (r *ipRange) size() *big.Int {
 
 // String implements fmt.Stringer.
 func (r *ipRange) String() string {
-	if r.start.Equal(r.end.IP) {
+	inc := r.size()
+	dv := new(big.Int).Sub(inc, big.NewInt(1))
+	bl := dv.BitLen()
+	if bl == 0 {
 		return r.start.String()
 	}
 
-	return r.start.String() + "-" + r.end.String()
+	if inc.And(inc, dv).Sign() != 0 {
+		return r.start.String() + "-" + r.end.String()
+	}
+
+	bits := 32
+	if r.start.version() == IPv6 {
+		bits = 128
+	}
+	ipNet := &net.IPNet{
+		IP:   r.start.IP,
+		Mask: net.CIDRMask(bits-bl, bits),
+	}
+
+	return ipNet.String()
 }

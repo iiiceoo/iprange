@@ -1390,6 +1390,19 @@ var ipRangesStringsTests = []struct {
 		},
 	},
 	{
+		name: "CIDR",
+		ranges: &IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::")},
+					end:   xIP{net.ParseIP("fd00::ff")},
+				},
+			},
+		},
+		want: []string{"fd00::/120"},
+	},
+	{
 		name: "single",
 		ranges: &IPRanges{
 			version: IPv6,

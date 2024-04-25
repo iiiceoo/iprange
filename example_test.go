@@ -22,7 +22,7 @@ func ExampleParse() {
 	fmt.Println(v4Ranges)
 	fmt.Println(v6Ranges)
 	// Output:
-	// [172.18.0.1 172.18.0.0-172.18.0.255]
+	// [172.18.0.1 172.18.0.0/24]
 	// [fd00::1-fd00::a fd00::1-fd00::1:a]
 }
 
@@ -147,7 +147,7 @@ func ExampleIPRanges_Diff() {
 
 	fmt.Println(ranges1.Diff(ranges2))
 	// Output:
-	// [172.18.0.1-172.18.0.4 172.18.0.26-172.18.0.30]
+	// [172.18.0.1/30 172.18.0.26-172.18.0.30]
 }
 
 func ExampleIPRanges_Intersect() {
