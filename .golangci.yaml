@@ -1,0 +1,46 @@
+linters-settings:
+  gocritic:
+    enabled-tags:
+      # - performance
+      - diagnostic
+      - experimental
+      - opinionated
+      - style
+    disabled-checks:
+      - dupImport
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+  gofmt:
+    rewrite-rules:
+      - pattern: 'interface{}'
+        replacement: 'any'
+
+linters:
+  disable-all: true
+  enable:
+    - goheader
+    - bodyclose
+    - dogsled
+    - errcheck
+    - exportloopref
+    - gocheckcompilerdirectives
+    - gocritic
+    - gofmt
+    - goimports
+    - goprintffuncname
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - noctx
+    - nolintlint
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - whitespace
+
+run:
+  timeout: 1m

@@ -118,32 +118,32 @@ func (rr *IPRanges) Contains(ip net.IP) bool {
 	return false
 }
 
-// MergeEqual reports whether IPRanges rr1 is equal to rr2, but both rr1 and
+// MergeEqual reports whether IPRanges rr is equal to rr2, but both rr and
 // rr2 are pre-merged, which means they are both ordered and deduplicated.
-func (rr1 *IPRanges) MergeEqual(rr2 *IPRanges) bool {
-	if rr1.version != rr2.version {
+func (rr *IPRanges) MergeEqual(rr2 *IPRanges) bool {
+	if rr.version != rr2.version {
 		return false
 	}
 
-	rr1 = rr1.DeepCopy().Merge()
+	rr = rr.DeepCopy().Merge()
 	rr2 = rr2.DeepCopy().Merge()
 
-	return rr1.Equal(rr2)
+	return rr.Equal(rr2)
 }
 
-// Equal reports whether IPRanges rr1 is equal to rr2.
-func (rr1 *IPRanges) Equal(rr2 *IPRanges) bool {
-	if rr1.version != rr2.version {
+// Equal reports whether IPRanges rr is equal to rr2.
+func (rr *IPRanges) Equal(rr2 *IPRanges) bool {
+	if rr.version != rr2.version {
 		return false
 	}
 
-	n := len(rr1.ranges)
+	n := len(rr.ranges)
 	if len(rr2.ranges) != n {
 		return false
 	}
 
 	for i := 0; i < n; i++ {
-		if !rr1.ranges[i].equal(&rr2.ranges[i]) {
+		if !rr.ranges[i].equal(&rr2.ranges[i]) {
 			return false
 		}
 	}

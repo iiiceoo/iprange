@@ -81,16 +81,20 @@ func ExampleIPRanges_Equal() {
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
-	ranges2, err := iprange.Parse("172.18.0.100-255", "172.18.0.0-200")
+	ranges2, err := iprange.Parse("172.18.0.0-255")
+	if err != nil {
+		log.Fatalf("error parsing IP ranges: %v", err)
+	}
+	ranges3, err := iprange.Parse("172.18.0.100-255", "172.18.0.0-200")
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
 
 	fmt.Println(ranges1.Equal(ranges2))
-	fmt.Println(ranges1.Equal(ranges1))
+	fmt.Println(ranges1.Equal(ranges3))
 	// Output:
-	// false
 	// true
+	// false
 }
 
 func ExampleIPRanges_Size() {
