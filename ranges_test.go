@@ -1245,6 +1245,199 @@ func TestIPRangesIntersect(t *testing.T) {
 	}
 }
 
+var ipRangesSliceTests = []struct {
+	name   string
+	ranges *IPRanges
+	start  *big.Int
+	end    *big.Int
+	want   *IPRanges
+}{
+	{
+		name: "IPv4",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 20).To4()},
+				},
+			},
+		},
+		start: big.NewInt(0),
+		end:   big.NewInt(2),
+		want: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 12).To4()},
+				},
+			},
+		},
+	},
+	{
+		name: "IPv6",
+		ranges: &IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::f")},
+					end:   xIP{net.ParseIP("fd00::f")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::8")},
+					end:   xIP{net.ParseIP("fd00::9")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::12")},
+					end:   xIP{net.ParseIP("fd00::16")},
+				},
+			},
+		},
+		start: big.NewInt(1),
+		end:   big.NewInt(3),
+		want: &IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::8")},
+					end:   xIP{net.ParseIP("fd00::9")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::12")},
+					end:   xIP{net.ParseIP("fd00::12")},
+				},
+			},
+		},
+	},
+	{
+		name: "negative index",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 20).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 25).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 30).To4()},
+				},
+			},
+		},
+		start: big.NewInt(1),
+		end:   big.NewInt(-2),
+		want: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 11).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 20).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 25).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 29).To4()},
+				},
+			},
+		},
+	},
+	{
+		name: "start < 0 && end > size",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+			},
+		},
+		start: big.NewInt(-100),
+		end:   big.NewInt(100),
+		want: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+			},
+		},
+	},
+	{
+		name: "end out of ranges",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+			},
+		},
+		start: big.NewInt(-100),
+		end:   big.NewInt(-100),
+		want:  &IPRanges{version: IPv4},
+	},
+	{
+		name: "start out of ranges",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+			},
+		},
+		start: big.NewInt(6),
+		end:   big.NewInt(6),
+		want:  &IPRanges{version: IPv4},
+	},
+	{
+		name: "start > end",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 5).To4()},
+				},
+			},
+		},
+		start: big.NewInt(-1),
+		end:   big.NewInt(0),
+		want:  &IPRanges{version: IPv4},
+	},
+	{
+		name:   "zero",
+		ranges: &IPRanges{},
+		want:   &IPRanges{},
+	},
+}
+
+func TestIPRangesSlice(t *testing.T) {
+	t.Parallel()
+	for _, test := range ipRangesSliceTests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			s := test.ranges.Slice(test.start, test.end)
+			if !cmp.Equal(s, test.want) {
+				t.Fatalf("IPRanges(%v).Slice(%v, %v) = %v, want %v", test.ranges, test.start, test.end, s, test.want)
+			}
+		})
+	}
+}
+
 var ipRangesIsOverlapTests = []struct {
 	name   string
 	ranges *IPRanges

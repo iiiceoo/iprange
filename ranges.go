@@ -5,6 +5,8 @@ import (
 	"net"
 	"sort"
 	"strings"
+
+	"github.com/brunoga/deep"
 )
 
 // family defines the version of IP.
@@ -123,7 +125,10 @@ func (rr1 *IPRanges) MergeEqual(rr2 *IPRanges) bool {
 		return false
 	}
 
-	return rr1.Merge().Equal(rr2.Merge())
+	rr1 = rr1.DeepCopy().Merge()
+	rr2 = rr2.DeepCopy().Merge()
+
+	return rr1.Equal(rr2)
 }
 
 // Equal reports whether IPRanges rr1 is equal to rr2.
@@ -159,28 +164,18 @@ func (rr *IPRanges) Size() *big.Int {
 
 // Merge merges the duplicate parts of multiple ipRanges in rr and sort
 // them by their respective starting xIP.
-//
-// It is safe for simultaneous use by multiple goroutines.
 func (rr *IPRanges) Merge() *IPRanges {
-	version := rr.version
-	n := len(rr.ranges)
-	rc := make([]ipRange, n)
-	copy(rc, rr.ranges)
-
-	if n <= 1 {
-		return &IPRanges{
-			version: version,
-			ranges:  rc,
-		}
+	if len(rr.ranges) <= 1 {
+		return rr
 	}
 
-	sort.Slice(rc, func(i, j int) bool {
-		return rc[i].start.cmp(rc[j].start) < 0
+	sort.Slice(rr.ranges, func(i, j int) bool {
+		return rr.ranges[i].start.cmp(rr.ranges[j].start) < 0
 	})
 
 	cur := -1
-	merged := make([]ipRange, 0, n)
-	for _, r := range rc {
+	merged := make([]ipRange, 0, len(rr.ranges))
+	for _, r := range rr.ranges {
 		if cur == -1 {
 			merged = append(merged, r)
 			cur++
@@ -202,11 +197,9 @@ func (rr *IPRanges) Merge() *IPRanges {
 			merged[cur].end = r.end
 		}
 	}
+	rr.ranges = merged
 
-	return &IPRanges{
-		version: version,
-		ranges:  merged,
-	}
+	return rr
 }
 
 // IsOverlap reports whether IPRanges rr have overlapping parts.
@@ -216,13 +209,13 @@ func (rr *IPRanges) IsOverlap() bool {
 		return false
 	}
 
-	rc := rr.ranges
-	sort.Slice(rc, func(i, j int) bool {
-		return rc[i].start.cmp(rc[j].start) < 0
+	rs := rr.DeepCopy().ranges
+	sort.Slice(rs, func(i, j int) bool {
+		return rs[i].start.cmp(rs[j].start) < 0
 	})
 
 	for i := 0; i < n-1; i++ {
-		if rc[i].end.cmp(rc[i+1].start) >= 0 {
+		if rs[i].end.cmp(rs[i+1].start) >= 0 {
 			return true
 		}
 	}
@@ -235,19 +228,13 @@ func (rr *IPRanges) IsOverlap() bool {
 //
 //	Input:  [172.18.0.20-30, 172.18.0.1-25] U [172.18.0.5-25]
 //	Output: [172.18.0.1-30]
-//
-// It is safe for simultaneous use by multiple goroutines.
 func (rr *IPRanges) Union(rs *IPRanges) *IPRanges {
 	if rr.version != rs.version {
 		return rr.Merge()
 	}
+	rr.ranges = append(rr.ranges, rs.ranges...)
 
-	dup := &IPRanges{
-		version: rr.version,
-		ranges:  append(rr.ranges, rs.ranges...),
-	}
-
-	return dup.Merge()
+	return rr.Merge()
 }
 
 // Diff calculates the difference of IPRanges rr and rs with the same IP
@@ -255,8 +242,6 @@ func (rr *IPRanges) Union(rs *IPRanges) *IPRanges {
 //
 //	Input:  [172.18.0.20-30, 172.18.0.1-25] - [172.18.0.5-25]
 //	Output: [172.18.0.1-4, 172.18.0.26-30]
-//
-// It is safe for simultaneous use by multiple goroutines.
 func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
 	if rr.version != rs.version {
 		return rr.Merge()
@@ -266,7 +251,7 @@ func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
 		return rr.Merge()
 	}
 
-	version := rr.version
+	rs = rs.DeepCopy()
 	omr := rr.Merge().ranges
 	tmr := rs.Merge().ranges
 	n1, n2 := len(omr), len(tmr)
@@ -334,11 +319,9 @@ func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
 	if i+1 < n1 {
 		ranges = append(ranges, omr[i+1:]...)
 	}
+	rr.ranges = ranges
 
-	return &IPRanges{
-		version: version,
-		ranges:  ranges,
-	}
+	return rr
 }
 
 // Intersect calculates the intersection of IPRanges rr and rs with the
@@ -346,8 +329,6 @@ func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
 //
 //	Input:  [172.18.0.20-30, 172.18.0.1-25] ∩ [172.18.0.5-25]
 //	Output: [172.18.0.5-25]
-//
-// It is safe for simultaneous use by multiple goroutines.
 func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
 	if rr.version != rs.version {
 		return rr.Merge()
@@ -357,7 +338,7 @@ func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
 		return rr.Merge()
 	}
 
-	version := rr.version
+	rs = rs.DeepCopy()
 	omr := rr.Merge().ranges
 	tmr := rs.Merge().ranges
 	n1, n2 := len(omr), len(tmr)
@@ -379,11 +360,91 @@ func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
 			j++
 		}
 	}
+	rr.ranges = ranges
 
-	return &IPRanges{
-		version: version,
-		ranges:  ranges,
+	return rr
+}
+
+// Slice returns a slice of IPRanges, supporting negative indexes.
+func (rr *IPRanges) Slice(start, end *big.Int) *IPRanges {
+	size := rr.Size()
+	version := rr.version
+	rs := &IPRanges{version: version}
+	if size.Sign() == 0 {
+		return rs
 	}
+
+	if start.Sign() < 0 {
+		start = new(big.Int).Add(start, size)
+		if start.Sign() < 0 {
+			start = big.NewInt(0)
+		}
+	} else {
+		start = new(big.Int).Set(start)
+	}
+
+	if end.Sign() < 0 {
+		end = new(big.Int).Add(end, size)
+		if end.Sign() < 0 {
+			return rs
+		}
+	} else {
+		end = new(big.Int).Set(end)
+	}
+
+	if start.Cmp(end) > 0 {
+		return rs
+	}
+
+	var ranges []ipRange
+	for i := 0; i < len(rr.ranges); i++ {
+		size := rr.ranges[i].size()
+		if start.Cmp(size) >= 0 {
+			start.Sub(start, size)
+			end.Sub(end, size)
+			continue
+		}
+
+		if start.Sign() >= 0 {
+			if end.Cmp(size) < 0 {
+				ranges = append(ranges, ipRange{
+					start: rr.ranges[i].start.nextN(start),
+					end:   rr.ranges[i].start.nextN(end),
+				})
+				break
+			}
+
+			ranges = append(ranges, ipRange{
+				start: rr.ranges[i].start.nextN(start),
+				end:   rr.ranges[i].end,
+			})
+			start.Sub(start, size)
+			end.Sub(end, size)
+			continue
+		}
+
+		if end.Cmp(size) >= 0 {
+			ranges = append(ranges, ipRange{
+				start: rr.ranges[i].start,
+				end:   rr.ranges[i].end,
+			})
+			end.Sub(end, size)
+			continue
+		}
+
+		ranges = append(ranges, ipRange{
+			start: rr.ranges[i].start,
+			end:   rr.ranges[i].start.nextN(end),
+		})
+		break
+	}
+	rs.ranges = ranges
+
+	return rs
+}
+
+func (rr *IPRanges) DeepCopy() *IPRanges {
+	return deep.MustCopy(rr)
 }
 
 // String implements fmt.Stringer.
