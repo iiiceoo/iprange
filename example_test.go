@@ -169,6 +169,17 @@ func ExampleIPRanges_Intersect() {
 	// [172.18.0.5-172.18.0.25]
 }
 
+func ExampleIPRanges_Slice() {
+	ranges, err := iprange.Parse("172.18.0.1-5", "172.18.0.10-14")
+	if err != nil {
+		log.Fatalf("error parsing IP ranges: %v", err)
+	}
+
+	fmt.Println(ranges.Slice(big.NewInt(2), big.NewInt(-2)))
+	// Output:
+	// [172.18.0.3-172.18.0.5 172.18.0.10/30]
+}
+
 func ExampleIPRanges_IsOverlap() {
 	ranges1, err := iprange.Parse("172.18.0.20-30", "172.18.0.25")
 	if err != nil {
