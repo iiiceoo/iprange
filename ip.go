@@ -39,9 +39,7 @@ func (ip xIP) next() xIP {
 // nextN returns the next nth IP address of xIP.
 func (ip xIP) nextN(n *big.Int) xIP {
 	if n.Sign() == 0 {
-		cp := make(net.IP, len(ip.IP))
-		copy(cp, ip.IP)
-		return xIP{cp}
+		return ip
 	}
 
 	i := ipToInt(ip.IP)

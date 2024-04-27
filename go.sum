@@ -1,2 +1,4 @@
+github.com/brunoga/deep v1.2.1 h1:VcAvkMBx5XhGdV6dszNTGF3BH5dovDROKyA3hlQ1dm0=
+github.com/brunoga/deep v1.2.1/go.mod h1:GDV6dnXqn80ezsLSZ5Wlv1PdKAWAO4L5PnKYtv2dgaI=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=

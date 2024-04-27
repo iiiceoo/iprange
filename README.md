@@ -56,17 +56,6 @@ func main() {
 		}
 		fmt.Println(ip)
 	}
-
-	// Convert IP ranges to subnets.
-	fmt.Println("Iterate through subnets:")
-	cidrIter := diff.CIDRIterator()
-	for {
-		cidr := cidrIter.Next()
-		if cidr == nil {
-			break
-		}
-		fmt.Println(cidr)
-	}
 }
 ```
 
