@@ -56,13 +56,13 @@ func (ip xIP) prev() xIP {
 	return xIP{intToIP(i)}
 }
 
-// cmp compares xIP ip1 and ip2 with the same IP version and returns:
+// cmp compares xIP ip and ip2 with the same IP version and returns:
 //
-//	-1: ip1 <  ip2
-//	 0: ip1 == ip2
-//	+1: ip1 >  ip2
-func (ip1 xIP) cmp(ip2 xIP) int {
-	nIP1 := normalizeIP(ip1.IP)
+//	-1: ip <  ip2
+//	 0: ip == ip2
+//	+1: ip >  ip2
+func (ip xIP) cmp(ip2 xIP) int {
+	nIP1 := normalizeIP(ip.IP)
 	nIP2 := normalizeIP(ip2.IP)
 
 	return ipToInt(nIP1).Cmp(ipToInt(nIP2))
