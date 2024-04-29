@@ -1507,7 +1507,7 @@ var ipRangesStringTests = []struct {
 	want   string
 }{
 	{
-		name: "range",
+		name: "ranges",
 		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -1524,6 +1524,32 @@ var ipRangesStringTests = []struct {
 		want: "[172.18.0.100-172.18.0.255 172.18.0.0-172.18.0.200]",
 	},
 	{
+		name: "range",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 100)},
+					end:   xIP{net.IPv4(172, 18, 0, 255)},
+				},
+			},
+		},
+		want: "172.18.0.100-172.18.0.255",
+	},
+	{
+		name: "CIDR",
+		ranges: &IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::")},
+					end:   xIP{net.ParseIP("fd00::ff")},
+				},
+			},
+		},
+		want: "fd00::/120",
+	},
+	{
 		name: "single",
 		ranges: &IPRanges{
 			version: IPv6,
@@ -1534,7 +1560,7 @@ var ipRangesStringTests = []struct {
 				},
 			},
 		},
-		want: "[fd00::1]",
+		want: "fd00::1",
 	},
 	{
 		name:   "zero",

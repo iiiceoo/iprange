@@ -121,7 +121,7 @@ func ExampleIPRanges_Merge() {
 	fmt.Println(ranges.Merge())
 	// Output:
 	// [172.18.0.201 172.18.0.100-172.18.0.200 172.18.0.1-172.18.0.150]
-	// [172.18.0.1-172.18.0.201]
+	// 172.18.0.1-172.18.0.201
 }
 
 func ExampleIPRanges_Union() {
@@ -136,7 +136,7 @@ func ExampleIPRanges_Union() {
 
 	fmt.Println(ranges1.Union(ranges2))
 	// Output:
-	// [172.18.0.1-172.18.0.30]
+	// 172.18.0.1-172.18.0.30
 }
 
 func ExampleIPRanges_Diff() {
@@ -166,7 +166,7 @@ func ExampleIPRanges_Intersect() {
 
 	fmt.Println(ranges1.Intersect(ranges2))
 	// Output:
-	// [172.18.0.5-172.18.0.25]
+	// 172.18.0.5-172.18.0.25
 }
 
 func ExampleIPRanges_Slice() {
@@ -255,10 +255,10 @@ func ExampleIPRanges_BlockIterator() {
 	}
 
 	// Output:
-	// [172.18.0.1/31]
-	// [172.18.0.3/31]
-	// [172.18.0.5]
-	// [172.18.0.5]
+	// 172.18.0.1/31
+	// 172.18.0.3/31
+	// 172.18.0.5
+	// 172.18.0.5
 }
 
 func ExampleIPRanges_CIDRIterator() {
