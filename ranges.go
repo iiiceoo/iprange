@@ -1,10 +1,10 @@
 package iprange
 
 import (
+	"fmt"
 	"math/big"
 	"net"
 	"sort"
-	"strings"
 
 	"github.com/brunoga/deep"
 )
@@ -449,12 +449,12 @@ func (rr *IPRanges) DeepCopy() *IPRanges {
 
 // String implements fmt.Stringer.
 func (rr *IPRanges) String() string {
-	ss := make([]string, 0, len(rr.ranges))
-	for _, r := range rr.ranges {
-		ss = append(ss, r.String())
+	ss := rr.Strings()
+	if len(ss) == 1 {
+		return ss[0]
 	}
 
-	return "[" + strings.Join(ss, " ") + "]"
+	return fmt.Sprint(ss)
 }
 
 // Strings returns a slice of the string representations of the IPRanges rr.
