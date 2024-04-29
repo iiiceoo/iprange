@@ -23,10 +23,6 @@ var ipRangesIPIteratorNextTests = []struct {
 					end:   xIP{net.IPv4(172, 18, 0, 10).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 2).To4()},
-					end:   xIP{net.IPv4(172, 18, 0, 3).To4()},
-				},
-				{
 					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
 					end:   xIP{net.IPv4(172, 18, 0, 2).To4()},
 				},
@@ -34,8 +30,6 @@ var ipRangesIPIteratorNextTests = []struct {
 		},
 		want: []net.IP{
 			net.IPv4(172, 18, 0, 10).To4(),
-			net.IPv4(172, 18, 0, 2).To4(),
-			net.IPv4(172, 18, 0, 3).To4(),
 			net.IPv4(172, 18, 0, 1).To4(),
 			net.IPv4(172, 18, 0, 2).To4(),
 		},
@@ -50,10 +44,6 @@ var ipRangesIPIteratorNextTests = []struct {
 					end:   xIP{net.ParseIP("fd00::a")},
 				},
 				{
-					start: xIP{net.ParseIP("fd00::2")},
-					end:   xIP{net.ParseIP("fd00::3")},
-				},
-				{
 					start: xIP{net.ParseIP("fd00::1")},
 					end:   xIP{net.ParseIP("fd00::2")},
 				},
@@ -61,8 +51,6 @@ var ipRangesIPIteratorNextTests = []struct {
 		},
 		want: []net.IP{
 			net.ParseIP("fd00::a"),
-			net.ParseIP("fd00::2"),
-			net.ParseIP("fd00::3"),
 			net.ParseIP("fd00::1"),
 			net.ParseIP("fd00::2"),
 		},
@@ -100,13 +88,12 @@ func TestIPRangesIPIteratorNext(t *testing.T) {
 
 var ipRangesIPIteratorNextNTests = []struct {
 	name   string
-	n      *big.Int
 	ranges *IPRanges
+	n      *big.Int
 	want   []net.IP
 }{
 	{
 		name: "IPv4",
-		n:    big.NewInt(1),
 		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -115,25 +102,20 @@ var ipRangesIPIteratorNextNTests = []struct {
 					end:   xIP{net.IPv4(172, 18, 0, 10).To4()},
 				},
 				{
-					start: xIP{net.IPv4(172, 18, 0, 2).To4()},
-					end:   xIP{net.IPv4(172, 18, 0, 3).To4()},
-				},
-				{
 					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
 					end:   xIP{net.IPv4(172, 18, 0, 2).To4()},
 				},
 			},
 		},
+		n: big.NewInt(0),
 		want: []net.IP{
-			net.IPv4(172, 18, 0, 2).To4(),
-			net.IPv4(172, 18, 0, 3).To4(),
+			net.IPv4(172, 18, 0, 10).To4(),
 			net.IPv4(172, 18, 0, 1).To4(),
 			net.IPv4(172, 18, 0, 2).To4(),
 		},
 	},
 	{
 		name: "IPv6",
-		n:    big.NewInt(2),
 		ranges: &IPRanges{
 			version: IPv6,
 			ranges: []ipRange{
@@ -151,14 +133,14 @@ var ipRangesIPIteratorNextNTests = []struct {
 				},
 			},
 		},
+		n: big.NewInt(2),
 		want: []net.IP{
-			net.ParseIP("fd00::3"),
 			net.ParseIP("fd00::2"),
+			net.ParseIP("fd00::1"),
 		},
 	},
 	{
 		name: "out of ranges",
-		n:    big.NewInt(1),
 		ranges: &IPRanges{
 			version: IPv4,
 			ranges: []ipRange{
@@ -168,11 +150,13 @@ var ipRangesIPIteratorNextNTests = []struct {
 				},
 			},
 		},
+		n:    big.NewInt(2),
 		want: nil,
 	},
 	{
 		name:   "zero",
 		ranges: &IPRanges{},
+		n:      big.NewInt(1),
 		want:   nil,
 	},
 }
@@ -195,7 +179,266 @@ func TestIPRangesIPIteratorNextN(t *testing.T) {
 			}
 
 			if !cmp.Equal(ips, test.want) {
-				t.Fatalf("IPRanges(%v).IPIterator().NextN() = %v, want %v", test.ranges, ips, test.want)
+				t.Fatalf("IPRanges(%v).IPIterator().NextN(%v) = %v, want %v", test.ranges, test.n, ips, test.want)
+			}
+		})
+	}
+}
+
+var ipRangesBlockIteratorNextTests = []struct {
+	name      string
+	ranges    *IPRanges
+	blockSize *big.Int
+	want      []*IPRanges
+}{
+	{
+		name: "IPv4",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 10).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 2).To4()},
+				},
+			},
+		},
+		blockSize: big.NewInt(0),
+		want: []*IPRanges{
+			{
+				version: IPv4,
+				ranges: []ipRange{
+					{
+						start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+						end:   xIP{net.IPv4(172, 18, 0, 10).To4()},
+					},
+				},
+			},
+			{
+				version: IPv4,
+				ranges: []ipRange{
+					{
+						start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+						end:   xIP{net.IPv4(172, 18, 0, 1).To4()},
+					},
+				},
+			},
+			{
+				version: IPv4,
+				ranges: []ipRange{
+					{
+						start: xIP{net.IPv4(172, 18, 0, 2).To4()},
+						end:   xIP{net.IPv4(172, 18, 0, 2).To4()},
+					},
+				},
+			},
+		},
+	},
+	{
+		name: "IPv6",
+		ranges: &IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::a")},
+					end:   xIP{net.ParseIP("fd00::a")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::6")},
+					end:   xIP{net.ParseIP("fd00::9")},
+				},
+			},
+		},
+		blockSize: big.NewInt(2),
+		want: []*IPRanges{
+			{
+				version: IPv6,
+				ranges: []ipRange{
+					{
+						start: xIP{net.ParseIP("fd00::a")},
+						end:   xIP{net.ParseIP("fd00::a")},
+					},
+					{
+						start: xIP{net.ParseIP("fd00::6")},
+						end:   xIP{net.ParseIP("fd00::6")},
+					},
+				},
+			},
+			{
+				version: IPv6,
+				ranges: []ipRange{
+					{
+						start: xIP{net.ParseIP("fd00::7")},
+						end:   xIP{net.ParseIP("fd00::8")},
+					},
+				},
+			},
+			{
+				version: IPv6,
+				ranges: []ipRange{
+					{
+						start: xIP{net.ParseIP("fd00::9")},
+						end:   xIP{net.ParseIP("fd00::9")},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:      "zero",
+		ranges:    &IPRanges{},
+		blockSize: big.NewInt(1),
+		want:      nil,
+	},
+}
+
+func TestIPRangesBlockIteratorNext(t *testing.T) {
+	t.Parallel()
+	for _, test := range ipRangesBlockIteratorNextTests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			iter := test.ranges.BlockIterator(test.blockSize)
+
+			var ranges []*IPRanges
+			for {
+				r := iter.Next()
+				if r == nil {
+					break
+				}
+				ranges = append(ranges, r)
+			}
+
+			if !cmp.Equal(ranges, test.want) {
+				t.Fatalf("IPRanges(%v).BlockIterator(%v).Next() = %v, want %v", test.ranges, test.blockSize, ranges, test.want)
+			}
+		})
+	}
+}
+
+var ipRangesBlockIteratorNextNTests = []struct {
+	name      string
+	ranges    *IPRanges
+	blockSize *big.Int
+	n         *big.Int
+	want      []*IPRanges
+}{
+	{
+		name: "IPv4",
+		ranges: &IPRanges{
+			version: IPv4,
+			ranges: []ipRange{
+				{
+					start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 10).To4()},
+				},
+				{
+					start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+					end:   xIP{net.IPv4(172, 18, 0, 2).To4()},
+				},
+			},
+		},
+		blockSize: big.NewInt(1),
+		n:         big.NewInt(0),
+		want: []*IPRanges{
+			{
+				version: IPv4,
+				ranges: []ipRange{
+					{
+						start: xIP{net.IPv4(172, 18, 0, 10).To4()},
+						end:   xIP{net.IPv4(172, 18, 0, 10).To4()},
+					},
+				},
+			},
+			{
+				version: IPv4,
+				ranges: []ipRange{
+					{
+						start: xIP{net.IPv4(172, 18, 0, 1).To4()},
+						end:   xIP{net.IPv4(172, 18, 0, 1).To4()},
+					},
+				},
+			},
+			{
+				version: IPv4,
+				ranges: []ipRange{
+					{
+						start: xIP{net.IPv4(172, 18, 0, 2).To4()},
+						end:   xIP{net.IPv4(172, 18, 0, 2).To4()},
+					},
+				},
+			},
+		},
+	},
+	{
+		name: "IPv6",
+		ranges: &IPRanges{
+			version: IPv6,
+			ranges: []ipRange{
+				{
+					start: xIP{net.ParseIP("fd00::a")},
+					end:   xIP{net.ParseIP("fd00::a")},
+				},
+				{
+					start: xIP{net.ParseIP("fd00::6")},
+					end:   xIP{net.ParseIP("fd00::b")},
+				},
+			},
+		},
+		blockSize: big.NewInt(2),
+		n:         big.NewInt(2),
+		want: []*IPRanges{
+			{
+				version: IPv6,
+				ranges: []ipRange{
+					{
+						start: xIP{net.ParseIP("fd00::7")},
+						end:   xIP{net.ParseIP("fd00::8")},
+					},
+				},
+			},
+			{
+				version: IPv6,
+				ranges: []ipRange{
+					{
+						start: xIP{net.ParseIP("fd00::b")},
+						end:   xIP{net.ParseIP("fd00::b")},
+					},
+				},
+			},
+		},
+	},
+	{
+		name:      "zero",
+		ranges:    &IPRanges{},
+		blockSize: big.NewInt(1),
+		n:         big.NewInt(1),
+		want:      nil,
+	},
+}
+
+func TestIPRangesBlockIteratorNextN(t *testing.T) {
+	t.Parallel()
+	for _, test := range ipRangesBlockIteratorNextNTests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			iter := test.ranges.BlockIterator(test.blockSize)
+
+			var ranges []*IPRanges
+			for {
+				r := iter.NextN(test.n)
+				if r == nil {
+					break
+				}
+				ranges = append(ranges, r)
+			}
+
+			if !cmp.Equal(ranges, test.want) {
+				t.Fatalf("IPRanges(%v).BlockIterator(%v).NextN(%v) = %v, want %v", test.ranges, test.blockSize, test.n, ranges, test.want)
 			}
 		})
 	}

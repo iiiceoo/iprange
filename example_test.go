@@ -226,7 +226,39 @@ func ExampleIPRanges_IPIterator() {
 	// 172.18.0.1
 	// 172.18.0.2
 	// 172.18.0.3
-	// 172.18.0.3
+	// 172.18.0.2
+}
+
+func ExampleIPRanges_BlockIterator() {
+	ranges, err := iprange.Parse("172.18.0.1-5")
+	if err != nil {
+		log.Fatalf("error parsing IP ranges: %v", err)
+	}
+
+	iter := ranges.BlockIterator(big.NewInt(2))
+	for {
+		ip := iter.Next()
+		if ip == nil {
+			break
+		}
+		fmt.Println(ip)
+	}
+
+	iter.Reset()
+	n := big.NewInt(3)
+	for {
+		ip := iter.NextN(n)
+		if ip == nil {
+			break
+		}
+		fmt.Println(ip)
+	}
+
+	// Output:
+	// [172.18.0.1/31]
+	// [172.18.0.3/31]
+	// [172.18.0.5]
+	// [172.18.0.5]
 }
 
 func ExampleIPRanges_CIDRIterator() {

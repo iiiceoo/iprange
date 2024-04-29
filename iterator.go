@@ -9,15 +9,16 @@ type ipIterator struct {
 	ranges     []ipRange
 	rangeIndex int
 	current    xIP
+	freeSize   *big.Int
 
-	freeSize *big.Int
+	one *big.Int
 }
 
-// IPIterator generates a new iterator for scanning IP addresses. Call
-// the method Next to get the next IP address.
+// IPIterator generates a new iterator for scanning IP addresses.
 func (rr *IPRanges) IPIterator() *ipIterator {
 	return &ipIterator{
 		ranges: rr.ranges,
+		one:    big.NewInt(1),
 	}
 }
 
@@ -32,13 +33,13 @@ func (ii *ipIterator) Next() net.IP {
 	if ii.current.IP == nil {
 		ii.freeSize = new(big.Int)
 		ii.freeSize.Set(ii.ranges[0].size())
-		ii.freeSize.Sub(ii.freeSize, big.NewInt(1))
+		ii.freeSize.Sub(ii.freeSize, ii.one)
 		ii.current.IP = ii.ranges[0].start.IP
 		return ii.current.IP
 	}
 
 	if !ii.current.Equal(ii.ranges[ii.rangeIndex].end.IP) {
-		ii.freeSize.Sub(ii.freeSize, big.NewInt(1))
+		ii.freeSize.Sub(ii.freeSize, ii.one)
 		ii.current = ii.current.next()
 		return ii.current.IP
 	}
@@ -48,34 +49,33 @@ func (ii *ipIterator) Next() net.IP {
 		return nil
 	}
 	ii.freeSize.Set(ii.ranges[ii.rangeIndex].size())
-	ii.freeSize.Sub(ii.freeSize, big.NewInt(1))
+	ii.freeSize.Sub(ii.freeSize, ii.one)
 	ii.current = ii.ranges[ii.rangeIndex].start
 
 	return ii.current.IP
 }
 
 // NextN returns the next nth IP address. If the ipIterator has been exhausted,
-// return nil. If n is negative, it is equivalent to NextN(0).
+// return nil. If n <= 0, it is equivalent to NextN(1).
 func (ii *ipIterator) NextN(n *big.Int) net.IP {
 	l := len(ii.ranges)
 	if l == 0 {
 		return nil
 	}
 
-	if n.Sign() < 0 {
-		n = big.NewInt(0)
-	} else {
-		n = new(big.Int).Set(n)
+	if n.Sign() <= 0 {
+		n = big.NewInt(1)
 	}
 
 	if ii.current.IP == nil {
+		n = new(big.Int).Set(n)
 		for {
 			size := ii.ranges[ii.rangeIndex].size()
-			if n.Cmp(size) < 0 {
+			if n.Cmp(size) <= 0 {
 				ii.freeSize = new(big.Int)
 				ii.freeSize.Set(size)
 				ii.freeSize.Sub(ii.freeSize, n)
-				ii.freeSize.Sub(ii.freeSize, big.NewInt(1))
+				n.Sub(n, ii.one)
 				ii.current.IP = ii.ranges[ii.rangeIndex].start.nextN(n).IP
 				return ii.current.IP
 			}
@@ -98,20 +98,100 @@ func (ii *ipIterator) NextN(n *big.Int) net.IP {
 	if ii.rangeIndex == l {
 		return nil
 	}
+	n = new(big.Int).Set(n)
 	n.Sub(n, ii.freeSize)
-	n.Sub(n, big.NewInt(1))
 	ii.freeSize.Set(ii.ranges[ii.rangeIndex].size())
 	ii.freeSize.Sub(ii.freeSize, n)
-	ii.freeSize.Sub(ii.freeSize, big.NewInt(1))
+	n.Sub(n, ii.one)
 	ii.current.IP = ii.ranges[ii.rangeIndex].start.nextN(n).IP
 
 	return ii.current.IP
 }
 
-// Reset resets iterator.
+// Reset resets IP iterator.
 func (ii *ipIterator) Reset() {
 	ii.rangeIndex = 0
 	ii.current.IP = nil
+}
+
+type blockIterator struct {
+	ranges    *IPRanges
+	size      *big.Int
+	blockSize *big.Int
+	start     *big.Int
+	end       *big.Int
+}
+
+// BlockIterator generates a new iterator for scanning IP blocks. blockSize
+// should be at least 1, which is somewhat equivalent to IPIterator.
+func (rr *IPRanges) BlockIterator(blockSize *big.Int) *blockIterator {
+	if blockSize == nil || blockSize.Sign() <= 0 {
+		blockSize = big.NewInt(1)
+	}
+
+	return &blockIterator{
+		ranges:    rr,
+		size:      rr.Size(),
+		blockSize: blockSize,
+	}
+}
+
+// Next returns the next IP block. If the blockIterator has been exhausted,
+// return nil.
+func (bi *blockIterator) Next() *IPRanges {
+	if bi.size.Sign() == 0 {
+		return nil
+	}
+
+	if bi.start == nil {
+		bi.start = big.NewInt(0)
+		bi.end = new(big.Int).Sub(bi.blockSize, big.NewInt(1))
+		return bi.ranges.Slice(bi.start, bi.end)
+	}
+
+	bi.start.Add(bi.start, bi.blockSize)
+	if bi.start.Cmp(bi.size) >= 0 {
+		return nil
+	}
+	bi.end.Add(bi.end, bi.blockSize)
+
+	return bi.ranges.Slice(bi.start, bi.end)
+}
+
+// NextN returns the next nth IP block. If the blockIterator has been
+// exhausted, return nil.  If n <= 0, it is equivalent to NextN(1).
+func (bi *blockIterator) NextN(n *big.Int) *IPRanges {
+	if bi.size.Sign() == 0 {
+		return nil
+	}
+
+	if n.Sign() <= 0 {
+		n = big.NewInt(1)
+	}
+
+	if bi.start == nil {
+		one := big.NewInt(1)
+		n = new(big.Int).Sub(n, one)
+		bi.start = new(big.Int).Mul(n, bi.blockSize)
+		bi.end = new(big.Int).Add(bi.start, bi.blockSize)
+		bi.end.Sub(bi.end, one)
+		return bi.ranges.Slice(bi.start, bi.end)
+	}
+
+	step := new(big.Int).Mul(n, bi.blockSize)
+	bi.start.Add(bi.start, step)
+	if bi.start.Cmp(bi.size) >= 0 {
+		return nil
+	}
+	bi.end.Add(bi.end, step)
+
+	return bi.ranges.Slice(bi.start, bi.end)
+}
+
+// Reset resets IP block iterator.
+func (bi *blockIterator) Reset() {
+	bi.start = nil
+	bi.end = nil
 }
 
 type cidrIterator struct {
@@ -121,13 +201,15 @@ type cidrIterator struct {
 	ipBitLen int
 	lastInt  *big.Int
 	current  *big.Int
+
+	one *big.Int
 }
 
-// CIDRIterator generates a new iterator for scanning CIDR. Call the
-// method Next to get the next CIDR.
+// CIDRIterator generates a new iterator for scanning CIDR.
 func (rr *IPRanges) CIDRIterator() *cidrIterator {
 	iter := &cidrIterator{
 		ranges: rr.ranges,
+		one:    big.NewInt(1),
 	}
 
 	if len(iter.ranges) != 0 {
@@ -163,15 +245,13 @@ func (ci *cidrIterator) Next() *net.IPNet {
 }
 
 func (ci *cidrIterator) next() *net.IPNet {
-	delta := big.NewInt(0)
-	delta.Sub(ci.lastInt, ci.current)
-	delta.Add(delta, big.NewInt(1))
+	delta := new(big.Int).Sub(ci.lastInt, ci.current)
+	delta.Add(delta, ci.one)
 
 	curIP := intToIP(ci.current)
 	nbits := min(righthandZeroBits(curIP), delta.BitLen()-1)
 
-	incr := big.NewInt(1)
-	incr.Lsh(incr, uint(nbits))
+	incr := new(big.Int).Lsh(ci.one, uint(nbits))
 	ci.current.Add(ci.current, incr)
 
 	return &net.IPNet{
