@@ -139,18 +139,22 @@ func (r *ipRange) String() string {
 		return r.start.String()
 	}
 
-	if inc.And(inc, dv).Sign() != 0 {
-		return r.start.String() + "-" + r.end.String()
+	if inc.And(inc, dv).Sign() == 0 {
+		bits := 32
+		if r.start.version() == IPv6 {
+			bits = 128
+		}
+
+		ip := r.start.IP
+		mask := net.CIDRMask(bits-bl, bits)
+		if ip.Mask(mask).Equal(ip) {
+			ipNet := net.IPNet{
+				IP:   ip,
+				Mask: mask,
+			}
+			return ipNet.String()
+		}
 	}
 
-	bits := 32
-	if r.start.version() == IPv6 {
-		bits = 128
-	}
-	ipNet := &net.IPNet{
-		IP:   r.start.IP,
-		Mask: net.CIDRMask(bits-bl, bits),
-	}
-
-	return ipNet.String()
+	return r.start.String() + "-" + r.end.String()
 }

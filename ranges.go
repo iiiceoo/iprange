@@ -459,10 +459,6 @@ func (rr *IPRanges) String() string {
 
 // Strings returns a slice of the string representations of the IPRanges rr.
 func (rr *IPRanges) Strings() []string {
-	if len(rr.ranges) == 0 {
-		return nil
-	}
-
 	ss := make([]string, 0, len(rr.ranges))
 	for _, r := range rr.ranges {
 		ss = append(ss, r.String())
