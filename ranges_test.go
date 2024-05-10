@@ -1637,7 +1637,7 @@ var ipRangesStringsTests = []struct {
 	{
 		name:   "zero",
 		ranges: &IPRanges{},
-		want:   nil,
+		want:   []string{},
 	},
 }
 

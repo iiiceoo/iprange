@@ -140,18 +140,18 @@ func ExampleIPRanges_Union() {
 }
 
 func ExampleIPRanges_Diff() {
-	ranges1, err := iprange.Parse("172.18.0.20-30", "172.18.0.1-25")
+	ranges1, err := iprange.Parse("172.18.0.20-30", "172.18.0.0-25")
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
-	ranges2, err := iprange.Parse("172.18.0.5-25")
+	ranges2, err := iprange.Parse("172.18.0.4-26")
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
 
 	fmt.Println(ranges1.Diff(ranges2))
 	// Output:
-	// [172.18.0.1/30 172.18.0.26-172.18.0.30]
+	// [172.18.0.0/30 172.18.0.27-172.18.0.30]
 }
 
 func ExampleIPRanges_Intersect() {
@@ -170,14 +170,14 @@ func ExampleIPRanges_Intersect() {
 }
 
 func ExampleIPRanges_Slice() {
-	ranges, err := iprange.Parse("172.18.0.1-5", "172.18.0.10-14")
+	ranges, err := iprange.Parse("172.18.0.0-3", "172.18.0.10-14")
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
 
 	fmt.Println(ranges.Slice(big.NewInt(2), big.NewInt(-2)))
 	// Output:
-	// [172.18.0.3-172.18.0.5 172.18.0.10/30]
+	// [172.18.0.2/31 172.18.0.10-172.18.0.13]
 }
 
 func ExampleIPRanges_IsOverlap() {
@@ -230,7 +230,7 @@ func ExampleIPRanges_IPIterator() {
 }
 
 func ExampleIPRanges_BlockIterator() {
-	ranges, err := iprange.Parse("172.18.0.1-5")
+	ranges, err := iprange.Parse("172.18.0.0-4")
 	if err != nil {
 		log.Fatalf("error parsing IP ranges: %v", err)
 	}
@@ -255,10 +255,10 @@ func ExampleIPRanges_BlockIterator() {
 	}
 
 	// Output:
-	// 172.18.0.1/31
-	// 172.18.0.3/31
-	// 172.18.0.5
-	// 172.18.0.5
+	// 172.18.0.0/31
+	// 172.18.0.2/31
+	// 172.18.0.4
+	// 172.18.0.4
 }
 
 func ExampleIPRanges_CIDRIterator() {
