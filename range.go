@@ -133,7 +133,7 @@ func (r *ipRange) size() *big.Int {
 // String implements fmt.Stringer.
 func (r *ipRange) String() string {
 	inc := r.size()
-	dv := new(big.Int).Sub(inc, big.NewInt(1))
+	dv := new(big.Int).Sub(inc, bigInt[1])
 	bl := dv.BitLen()
 	if bl == 0 {
 		return r.start.String()
