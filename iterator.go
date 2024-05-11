@@ -242,7 +242,7 @@ func (ci *cidrIterator) next() *net.IPNet {
 	delta.Add(delta, bigInt[1])
 
 	curIP := intToIP(ci.current)
-	nbits := min(righthandZeroBits(curIP), delta.BitLen()-1)
+	nbits := minN(righthandZeroBits(curIP), delta.BitLen()-1)
 
 	incr := new(big.Int).Lsh(bigInt[1], uint(nbits))
 	ci.current.Add(ci.current, incr)

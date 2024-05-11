@@ -115,7 +115,7 @@ func minXIP(x, y xIP) xIP {
 }
 
 // max returns the larger of x and y.
-func max(x, y int) int {
+func maxN(x, y int) int {
 	if x > y {
 		return x
 	}
@@ -124,7 +124,7 @@ func max(x, y int) int {
 }
 
 // min returns the smaller of x and y.
-func min(x, y int) int {
+func minN(x, y int) int {
 	if x < y {
 		return x
 	}

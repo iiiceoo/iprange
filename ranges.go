@@ -342,7 +342,7 @@ func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
 	omr := rr.Merge().ranges
 	tmr := rs.Merge().ranges
 	n1, n2 := len(omr), len(tmr)
-	ranges := make([]ipRange, 0, max(n1, n2))
+	ranges := make([]ipRange, 0, maxN(n1, n2))
 
 	for i, j := 0, 0; i < n1 && j < n2; {
 		start := maxXIP(omr[i].start, tmr[j].start)
