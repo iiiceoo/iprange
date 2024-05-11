@@ -5,6 +5,11 @@ import (
 	"net"
 )
 
+var bigInt = [...]*big.Int{
+	big.NewInt(0),
+	big.NewInt(1),
+}
+
 // xIP wraps net.IP in order to expand the method of net.IP.
 type xIP struct {
 	net.IP
@@ -31,7 +36,7 @@ func (ip xIP) version() family {
 // next returns the next IP address of xIP.
 func (ip xIP) next() xIP {
 	i := ipToInt(ip.IP)
-	i.Add(i, big.NewInt(1))
+	i.Add(i, bigInt[1])
 
 	return xIP{intToIP(i)}
 }
@@ -51,7 +56,7 @@ func (ip xIP) nextN(n *big.Int) xIP {
 // prev returns the previous IP address of xIP.
 func (ip xIP) prev() xIP {
 	i := ipToInt(ip.IP)
-	i.Sub(i, big.NewInt(1))
+	i.Sub(i, bigInt[1])
 
 	return xIP{intToIP(i)}
 }
@@ -70,7 +75,7 @@ func (ip xIP) cmp(ip2 xIP) int {
 
 // ipToInt converts net.IP to a big number.
 func ipToInt(ip net.IP) *big.Int {
-	return big.NewInt(0).SetBytes(ip)
+	return new(big.Int).SetBytes(ip)
 }
 
 // ipToInt converts big number to a net.IP.
