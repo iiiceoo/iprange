@@ -331,11 +331,15 @@ func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
 //	Output: [172.18.0.5-25]
 func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
 	if rr.version != rs.version {
-		return rr.Merge()
+		return &IPRanges{
+			version: rr.version,
+		}
 	}
 
 	if len(rr.ranges) == 0 || len(rs.ranges) == 0 {
-		return rr.Merge()
+		return &IPRanges{
+			version: rr.version,
+		}
 	}
 
 	rs = rs.DeepCopy()
