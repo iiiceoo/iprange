@@ -1183,15 +1183,7 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		want: &IPRanges{
-			version: IPv4,
-			ranges: []ipRange{
-				{
-					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
-					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
-				},
-			},
-		},
+		want: &IPRanges{version: IPv4},
 	},
 	{
 		name:    "zero-",
@@ -1218,16 +1210,8 @@ var ipRangesIntersectTests = []struct {
 				},
 			},
 		},
-		rangesY: &IPRanges{version: IPv6},
-		want: &IPRanges{
-			version: IPv4,
-			ranges: []ipRange{
-				{
-					start: xIP{net.IPv4(172, 18, 0, 20).To4()},
-					end:   xIP{net.IPv4(172, 18, 0, 25).To4()},
-				},
-			},
-		},
+		rangesY: &IPRanges{version: IPv4},
+		want:    &IPRanges{version: IPv4},
 	},
 }
 
