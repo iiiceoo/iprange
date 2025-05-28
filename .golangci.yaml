@@ -23,7 +23,6 @@ linters:
     - bodyclose
     - dogsled
     - errcheck
-    - exportloopref
     - gocheckcompilerdirectives
     - gocritic
     - gofmt
