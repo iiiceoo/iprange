@@ -72,7 +72,6 @@ func ExampleIPRanges_IPIterator() {
 		}
 		fmt.Println(addr)
 	}
-
 	// Output:
 	// 172.18.0.1
 	// 172.18.0.2
@@ -104,7 +103,6 @@ func ExampleIPRanges_BlockIterator() {
 		}
 		fmt.Println(ip)
 	}
-
 	// Output:
 	// 172.18.0.0/31
 	// 172.18.0.2/31
