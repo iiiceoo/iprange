@@ -1,3 +1,6 @@
 *.coverprofile
 .vscode
 .idea/
+
+.codex
+AGENTS.md

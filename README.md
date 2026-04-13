@@ -50,11 +50,11 @@ func main() {
 	fmt.Printf("Iterate through all %d IP addresses:\n", diff.Size())
 	ipIter := diff.IPIterator()
 	for {
-		ip := ipIter.Next()
-		if ip == nil {
+		addr := ipIter.Next()
+		if !addr.IsValid() {
 			break
 		}
-		fmt.Println(ip)
+		fmt.Println(addr)
 	}
 }
 ```
