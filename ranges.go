@@ -3,21 +3,16 @@ package iprange
 import (
 	"fmt"
 	"math/big"
-	"net"
-	"sort"
-
-	"github.com/brunoga/deep"
+	"net/netip"
+	"slices"
 )
 
 // family defines the version of IP.
 type family int
 
-// Standard IP version 4 or 6. Unknown represents an invalid IP version,
-// which is commonly used in the zero value of an IPRanges struct or to
-// distinguish an invalid xIP.
+// Standard IP version 4 or 6.
 const (
-	Unknown family = iota
-	IPv4
+	IPv4 family = iota
 	IPv6
 )
 
@@ -26,61 +21,50 @@ func (f family) String() string {
 	if f == IPv4 {
 		return "IPv4"
 	}
-	if f == IPv6 {
-		return "IPv6"
-	}
 
-	return "Unknown"
+	return "IPv6"
 }
 
-// IPRanges is a set of ipRange that uses the starting and ending IP
-// addresses to represent any IP range of any size. The following IP
-// range formats are valid:
+// IPRanges is a set of ipRange that uses the starting and ending IP addresses
+// to represent any IP range of any size. The following IP range formats are
+// valid:
 //
 //	172.18.0.1              fd00::1
 //	172.18.0.0/24           fd00::/64
 //	172.18.0.1-10           fd00::1-a
 //	172.18.0.1-172.18.1.10  fd00::1-fd00::1:a
 //
-// Dual-stack IP ranges are not allowed, The IP version of an IPRanges
-// can only be IPv4, IPv6, or unknown (zero value).
+// Dual-stack IP ranges are not allowed, The IP version of an IPRanges can only
+// be IPv4 or IPv6.
 type IPRanges struct {
 	version family
 	ranges  []ipRange
 }
 
-// Parse parses a set of IP range format strings as IPRanges, the slice
-// of ipRange with the same IP version, which records the starting and
-// ending IP addresses.
-//
-// The error errInvalidIPRangeFormat wiil be returned when one of IP range
-// string is invalid. And dual-stack IP ranges are not allowed, the error
-// errDualStackIPRanges occurs when parsing a set of IP range strings, where
-// there are both IPv4 and IPv6 addresses.
-func Parse(rs ...string) (*IPRanges, error) {
-	if len(rs) == 0 {
+// Parse parses a set of IP range format strings as IPRanges, the slice of
+// ipRange with the same IP version, which records the starting and ending IP
+// addresses.
+func Parse(formats ...string) (*IPRanges, error) {
+	if len(formats) == 0 {
 		return &IPRanges{}, nil
 	}
 
-	version := Unknown
-	ranges := make([]ipRange, 0, len(rs))
-	for i, r := range rs {
-		v, err := parse(r)
+	version := IPv4
+	ranges := make([]ipRange, 0, len(formats))
+	for i, f := range formats {
+		r, err := parse(f)
 		if err != nil {
 			return nil, err
 		}
 
 		if i == 0 {
-			version = IPv4
-			if v.start.To4() == nil {
-				version = IPv6
-			}
+			version = r.version()
 		}
 
-		if v.start.version() != version {
+		if i > 0 && r.version() != version {
 			return nil, errDualStackIPRanges
 		}
-		ranges = append(ranges, *v)
+		ranges = append(ranges, r)
 	}
 
 	return &IPRanges{
@@ -91,26 +75,27 @@ func Parse(rs ...string) (*IPRanges, error) {
 
 // Version returns the IP version of IPRanges:
 //
-//	1: IPv4
-//	2: IPv6
-//	0: zero value of IPRanges
-//
-// Do not compare family with a regular int value, which is confusing.
-// Use predefined const such as IPv4, IPv6, or Unknown.
-func (rr *IPRanges) Version() family {
-	return rr.version
+//	0: IPv4
+//	1: IPv6
+func (rs *IPRanges) Version() family {
+	return rs.version
 }
 
-// Contains reports whether IPRanges rr contain net.IP ip. If rr is IPv4
+// Contains reports whether IPRanges rs contain netip.Addr addr. If rs is IPv4
 // and ip is IPv6, then it is also considered not contained, and vice versa.
-func (rr *IPRanges) Contains(ip net.IP) bool {
-	w := xIP{ip}
-	if w.version() != rr.version {
+func (rs *IPRanges) Contains(addr netip.Addr) bool {
+	if len(rs.ranges) == 0 {
 		return false
 	}
 
-	for _, r := range rr.ranges {
-		if r.contains(ip) {
+	addr = addr.Unmap()
+	is4 := addr.Is4()
+	if (rs.version == IPv6 && is4) || (rs.version == IPv4 && !is4) {
+		return false
+	}
+
+	for _, r := range rs.ranges {
+		if r.contains(addr) {
 			return true
 		}
 	}
@@ -118,32 +103,29 @@ func (rr *IPRanges) Contains(ip net.IP) bool {
 	return false
 }
 
-// MergeEqual reports whether IPRanges rr is equal to rr2, but both rr and
-// rr2 are pre-merged, which means they are both ordered and deduplicated.
-func (rr *IPRanges) MergeEqual(rr2 *IPRanges) bool {
-	if rr.version != rr2.version {
+// MergeEqual reports whether IPRanges rs is equal to other, but both rs and
+// other are pre-merged, which means they are both ordered and deduplicated.
+func (rs *IPRanges) MergeEqual(other *IPRanges) bool {
+	if rs.version != other.version {
 		return false
 	}
 
-	rr = rr.DeepCopy().Merge()
-	rr2 = rr2.DeepCopy().Merge()
-
-	return rr.Equal(rr2)
+	return rs.Merge().Equal(other.Merge())
 }
 
-// Equal reports whether IPRanges rr is equal to rr2.
-func (rr *IPRanges) Equal(rr2 *IPRanges) bool {
-	if rr.version != rr2.version {
+// Equal reports whether IPRanges rs is equal to other.
+func (rs *IPRanges) Equal(other *IPRanges) bool {
+	if rs.version != other.version {
 		return false
 	}
 
-	n := len(rr.ranges)
-	if len(rr2.ranges) != n {
+	n := len(rs.ranges)
+	if len(other.ranges) != n {
 		return false
 	}
 
 	for i := 0; i < n; i++ {
-		if !rr.ranges[i].equal(&rr2.ranges[i]) {
+		if !rs.ranges[i].equal(other.ranges[i]) {
 			return false
 		}
 	}
@@ -151,116 +133,105 @@ func (rr *IPRanges) Equal(rr2 *IPRanges) bool {
 	return true
 }
 
-// Size calculates the total number of IP addresses that pertain to
-// IPRanges rr.
-func (rr *IPRanges) Size() *big.Int {
+// Size calculates the total number of IP addresses that pertain to IPRanges rs.
+func (rs *IPRanges) Size() *big.Int {
 	n := big.NewInt(0)
-	for _, r := range rr.ranges {
-		n.Add(n, r.size())
+	buf := new(big.Int)
+	for _, r := range rs.ranges {
+		n.Add(n, r.size(buf))
 	}
 
 	return n
 }
 
-// Merge merges the duplicate parts of multiple ipRanges in rr and sort
-// them by their respective starting xIP.
-func (rr *IPRanges) Merge() *IPRanges {
-	if len(rr.ranges) <= 1 {
-		return rr
+// Merge merges the duplicate parts of multiple ipRanges in rs and sort them by
+// their respective starting IP.
+func (rs *IPRanges) Merge() *IPRanges {
+	if len(rs.ranges) <= 1 {
+		return rs.Clone()
 	}
 
-	sort.Slice(rr.ranges, func(i, j int) bool {
-		return rr.ranges[i].start.cmp(rr.ranges[j].start) < 0
+	newRS := rs.Clone()
+	slices.SortFunc(newRS.ranges, func(a, b ipRange) int {
+		if cmp := a.start.cmp(b.start); cmp != 0 {
+			return cmp
+		}
+		return b.end.cmp(a.end)
 	})
 
-	cur := -1
-	merged := make([]ipRange, 0, len(rr.ranges))
-	for _, r := range rr.ranges {
-		if cur == -1 {
+	merged := newRS.ranges[:0]
+	for _, r := range newRS.ranges {
+		if len(merged) == 0 {
 			merged = append(merged, r)
-			cur++
 			continue
 		}
 
-		if merged[cur].end.next().cmp(r.start) == 0 {
-			merged[cur].end = r.end
-			continue
-		}
-
-		if merged[cur].end.cmp(r.start) < 0 {
+		last := &merged[len(merged)-1]
+		if last.end.next().cmp(r.start) < 0 {
 			merged = append(merged, r)
-			cur++
 			continue
 		}
 
-		if merged[cur].end.cmp(r.end) < 0 {
-			merged[cur].end = r.end
+		if last.end.cmp(r.end) < 0 {
+			last.end = r.end
 		}
 	}
-	rr.ranges = merged
 
-	return rr
+	newRS.ranges = slices.Clip(merged)
+	return newRS
 }
 
-// IsOverlap reports whether IPRanges rr have overlapping parts.
-func (rr *IPRanges) IsOverlap() bool {
-	n := len(rr.ranges)
-	if n <= 1 {
+// IsOverlap reports whether IPRanges rs have overlapping parts.
+func (rs *IPRanges) IsOverlap() bool {
+	if len(rs.ranges) <= 1 {
 		return false
 	}
 
-	rs := rr.DeepCopy().ranges
-	sort.Slice(rs, func(i, j int) bool {
-		return rs[i].start.cmp(rs[j].start) < 0
-	})
+	size := rs.Size()
+	merged := rs.Merge().Size()
 
-	for i := 0; i < n-1; i++ {
-		if rs[i].end.cmp(rs[i+1].start) >= 0 {
-			return true
-		}
-	}
-
-	return false
+	return size.Cmp(merged) > 0
 }
 
-// Union calculates the union of IPRanges rr and rs with the same IP
-// version. The result is always merged (ordered and deduplicated).
+// Union calculates the union of IPRanges rs and other with the same IP version.
+// The result is always merged (ordered and deduplicated).
 //
 //	Input:  [172.18.0.20-30, 172.18.0.1-25] U [172.18.0.5-25]
 //	Output: [172.18.0.1-30]
-func (rr *IPRanges) Union(rs *IPRanges) *IPRanges {
-	if rr.version != rs.version {
-		return rr.Merge()
+func (rs *IPRanges) Union(other *IPRanges) *IPRanges {
+	if rs.version != other.version {
+		return rs.Merge()
 	}
-	rr.ranges = append(rr.ranges, rs.ranges...)
 
-	return rr.Merge()
+	out := rs.Clone()
+	out.ranges = append(out.ranges, other.ranges...)
+
+	return out.Merge()
 }
 
-// Diff calculates the difference of IPRanges rr and rs with the same IP
+// Diff calculates the difference of IPRanges rs and other with the same IP
 // version. The result is always merged (ordered and deduplicated).
 //
 //	Input:  [172.18.0.20-30, 172.18.0.1-25] - [172.18.0.5-25]
 //	Output: [172.18.0.1-4, 172.18.0.26-30]
-func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
-	if rr.version != rs.version {
-		return rr.Merge()
+func (rs *IPRanges) Diff(other *IPRanges) *IPRanges {
+	if rs.version != other.version {
+		return rs.Merge()
 	}
 
-	if len(rr.ranges) == 0 || len(rs.ranges) == 0 {
-		return rr.Merge()
+	if len(rs.ranges) == 0 || len(other.ranges) == 0 {
+		return rs.Merge()
 	}
 
-	rs = rs.DeepCopy()
-	omr := rr.Merge().ranges
-	tmr := rs.Merge().ranges
+	omr := rs.Merge().ranges
+	tmr := other.Merge().ranges
 	n1, n2 := len(omr), len(tmr)
-	ranges := make([]ipRange, 0, n1+n2)
 
 	i, j := 0, 0
+	var ranges []ipRange
 	for i < n1 && j < n2 {
-		// The following are all distributions of the difference sets between two
-		// IP range A and B (IP range A - IP range B).
+		// The following are all distributions of the difference sets between
+		// two IP range A and B (IP range A - IP range B).
 		//
 		// For convenience, use symbols to distinguish between two IP ranges:
 		//   A: *------*
@@ -308,49 +279,45 @@ func (rr *IPRanges) Diff(rs *IPRanges) *IPRanges {
 
 		//     *------*
 		// `------`
-		omr[i].start = (tmr[j].end.next())
+		omr[i].start = tmr[j].end.next()
 		j++
 	}
 
-	if j == n2 && tmr[j-1].end.cmp(omr[i].end) < 0 {
-		ranges = append(ranges, omr[i])
+	if j == n2 && i < n1 {
+		ranges = append(ranges, omr[i:]...)
 	}
 
-	if i+1 < n1 {
-		ranges = append(ranges, omr[i+1:]...)
+	return &IPRanges{
+		version: rs.version,
+		ranges:  ranges,
 	}
-	rr.ranges = ranges
-
-	return rr
 }
 
-// Intersect calculates the intersection of IPRanges rr and rs with the
-// same IP version. The result is always merged (ordered and deduplicated).
+// Intersect calculates the intersection of IPRanges rs and other with the same
+// IP version. The result is always merged (ordered and deduplicated).
 //
 //	Input:  [172.18.0.20-30, 172.18.0.1-25] ∩ [172.18.0.5-25]
 //	Output: [172.18.0.5-25]
-func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
-	if rr.version != rs.version {
+func (rs *IPRanges) Intersect(other *IPRanges) *IPRanges {
+	if rs.version != other.version {
 		return &IPRanges{
-			version: rr.version,
+			version: rs.version,
 		}
 	}
 
-	if len(rr.ranges) == 0 || len(rs.ranges) == 0 {
+	if len(rs.ranges) == 0 || len(other.ranges) == 0 {
 		return &IPRanges{
-			version: rr.version,
+			version: rs.version,
 		}
 	}
 
-	rs = rs.DeepCopy()
-	omr := rr.Merge().ranges
-	tmr := rs.Merge().ranges
-	n1, n2 := len(omr), len(tmr)
-	ranges := make([]ipRange, 0, maxN(n1, n2))
+	omr := rs.Merge().ranges
+	tmr := other.Merge().ranges
 
-	for i, j := 0, 0; i < n1 && j < n2; {
-		start := maxXIP(omr[i].start, tmr[j].start)
-		end := minXIP(omr[i].end, tmr[j].end)
+	var ranges []ipRange
+	for i, j := 0, 0; i < len(omr) && j < len(tmr); {
+		start := maxIP(omr[i].start, tmr[j].start)
+		end := minIP(omr[i].end, tmr[j].end)
 		if start.cmp(end) <= 0 {
 			ranges = append(ranges, ipRange{
 				start: start,
@@ -364,18 +331,26 @@ func (rr *IPRanges) Intersect(rs *IPRanges) *IPRanges {
 			j++
 		}
 	}
-	rr.ranges = ranges
 
-	return rr
+	return &IPRanges{
+		version: rs.version,
+		ranges:  ranges,
+	}
 }
 
 // Slice returns a slice of IPRanges, supporting negative indexes.
-func (rr *IPRanges) Slice(start, end *big.Int) *IPRanges {
-	size := rr.Size()
-	version := rr.version
-	rs := &IPRanges{version: version}
+func (rs *IPRanges) Slice(start, end *big.Int) *IPRanges {
+	size := rs.Size()
+	out := &IPRanges{version: rs.version}
 	if size.Sign() == 0 {
-		return rs
+		return out
+	}
+
+	if start == nil {
+		start = big.NewInt(0)
+	}
+	if end == nil {
+		end = new(big.Int).Sub(size, bigInt[1])
 	}
 
 	if start.Sign() < 0 {
@@ -390,70 +365,66 @@ func (rr *IPRanges) Slice(start, end *big.Int) *IPRanges {
 	if end.Sign() < 0 {
 		end = new(big.Int).Add(end, size)
 		if end.Sign() < 0 {
-			return rs
+			return out
 		}
 	} else {
 		end = new(big.Int).Set(end)
 	}
 
 	if start.Cmp(end) > 0 {
-		return rs
+		return out
 	}
 
 	var ranges []ipRange
-	for i := 0; i < len(rr.ranges); i++ {
-		size := rr.ranges[i].size()
-		if start.Cmp(size) >= 0 {
-			start.Sub(start, size)
-			end.Sub(end, size)
+	for i := 0; i < len(rs.ranges); i++ {
+		rangeSize := rs.ranges[i].size(nil)
+		if start.Cmp(rangeSize) >= 0 {
+			start.Sub(start, rangeSize)
+			end.Sub(end, rangeSize)
 			continue
 		}
 
-		if start.Sign() >= 0 {
-			if end.Cmp(size) < 0 {
-				ranges = append(ranges, ipRange{
-					start: rr.ranges[i].start.nextN(start),
-					end:   rr.ranges[i].start.nextN(end),
-				})
-				break
-			}
-
+		if end.Cmp(rangeSize) < 0 {
 			ranges = append(ranges, ipRange{
-				start: rr.ranges[i].start.nextN(start),
-				end:   rr.ranges[i].end,
+				start: rs.ranges[i].start.nextN(start, nil),
+				end:   rs.ranges[i].start.nextN(end, nil),
 			})
-			start.Sub(start, size)
-			end.Sub(end, size)
-			continue
-		}
-
-		if end.Cmp(size) >= 0 {
-			ranges = append(ranges, ipRange{
-				start: rr.ranges[i].start,
-				end:   rr.ranges[i].end,
-			})
-			end.Sub(end, size)
-			continue
+			break
 		}
 
 		ranges = append(ranges, ipRange{
-			start: rr.ranges[i].start,
-			end:   rr.ranges[i].start.nextN(end),
+			start: rs.ranges[i].start.nextN(start, nil),
+			end:   rs.ranges[i].end,
 		})
-		break
+		start.Sub(start, rangeSize)
+		end.Sub(end, rangeSize)
 	}
-	rs.ranges = ranges
 
-	return rs
+	out.ranges = ranges
+	return out
 }
 
-func (rr *IPRanges) DeepCopy() *IPRanges {
-	return deep.MustCopy(rr)
+// Clone creates a deep copy of IPRanges rs.
+func (rs *IPRanges) Clone() *IPRanges {
+	n := len(rs.ranges)
+	if n == 0 {
+		return &IPRanges{
+			version: rs.version,
+		}
+	}
+
+	ranges := make([]ipRange, n)
+	copy(ranges, rs.ranges)
+
+	return &IPRanges{
+		version: rs.version,
+		ranges:  ranges,
+	}
 }
 
 // String implements fmt.Stringer.
-func (rr *IPRanges) String() string {
-	ss := rr.Strings()
+func (rs *IPRanges) String() string {
+	ss := rs.Strings()
 	if len(ss) == 1 {
 		return ss[0]
 	}
@@ -461,10 +432,10 @@ func (rr *IPRanges) String() string {
 	return fmt.Sprint(ss)
 }
 
-// Strings returns a slice of the string representations of the IPRanges rr.
-func (rr *IPRanges) Strings() []string {
-	ss := make([]string, 0, len(rr.ranges))
-	for _, r := range rr.ranges {
+// Strings returns a slice of the string representations of the IPRanges rs.
+func (rs *IPRanges) Strings() []string {
+	ss := make([]string, 0, len(rs.ranges))
+	for _, r := range rs.ranges {
 		ss = append(ss, r.String())
 	}
 
