@@ -42,5 +42,13 @@ Continuously call the method Next() until an zero value is returned:
 	    }
 	    // TODO
 	}
+
+Finally, the inspiration for writing this package comes from
+
+	CNI plugins:      https://github.com/containernetworking/plugins
+	malfunkt/iprange: https://github.com/malfunkt/iprange
+	netaddr/netaddr:  https://github.com/netaddr/netaddr
+
+both of which are great!
 */
 package iprange
