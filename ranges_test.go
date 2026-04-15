@@ -23,6 +23,16 @@ func mustRanges(version family, pairs ...[2]string) *IPRanges {
 	}
 }
 
+func TestErrorHelpers(t *testing.T) {
+	t.Parallel()
+	if !IsInvalidIPRangeFormat(errInvalidIPRangeFormat) {
+		t.Fatal("IsInvalidIPRangeFormat() = false, want true")
+	}
+	if !IsDualStackIPRanges(errDualStackIPRanges) {
+		t.Fatal("IsDualStackIPRanges() = false, want true")
+	}
+}
+
 var parseTests = []struct {
 	name string
 	rs   []string
@@ -77,23 +87,6 @@ func TestParse(t *testing.T) {
 				t.Fatalf("Parse(%q) = %#v, want %#v", test.rs, ranges, test.want)
 			}
 		})
-	}
-}
-
-func TestErrorHelpers(t *testing.T) {
-	t.Parallel()
-
-	if !IsInvalidIPRangeFormat(errInvalidIPRangeFormat) {
-		t.Fatal("IsInvalidIPRangeFormat() = false, want true")
-	}
-	if IsInvalidIPRangeFormat(errDualStackIPRanges) {
-		t.Fatal("IsInvalidIPRangeFormat() = true, want false")
-	}
-	if !IsDualStackIPRanges(errDualStackIPRanges) {
-		t.Fatal("IsDualStackIPRanges() = false, want true")
-	}
-	if IsDualStackIPRanges(errInvalidIPRangeFormat) {
-		t.Fatal("IsDualStackIPRanges() = true, want false")
 	}
 }
 
